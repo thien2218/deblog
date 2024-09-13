@@ -2,13 +2,19 @@
 	"name": "deblog",
 	"scripts": {
 		"dev": "wrangler dev src/index.ts",
-		"deploy": "wrangler deploy --minify src/index.ts"
+		"deploy": "wrangler deploy --minify src/index.ts",
+		"db:generate": "drizzle-kit generate",
+		"db:migrate:local": "wrangler d1 migrations apply deblog-db --local",
+		"db:migrate:remote": "wrangler d1 migrations apply deblog-db --remote"
 	},
 	"dependencies": {
-		"hono": "^4.6.1"
+		"drizzle-orm": "^0.33.0",
+		"hono": "^4.6.1",
+		"lucia": "^3.2.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20240529.0",
+		"drizzle-kit": "^0.24.2",
 		"wrangler": "^3.57.2"
 	}
 }
