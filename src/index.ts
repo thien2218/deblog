@@ -1,9 +1,9 @@
 import { Hono } from "hono";
+import { Context } from "./context";
+import { authRoutes } from "./routes";
 
-const app = new Hono();
+const app = new Hono<Context>();
 
-app.get("/", (c) => {
-	return c.text("Hello Hono!");
-});
+app.route("/", authRoutes);
 
 export default app;

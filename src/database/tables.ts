@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const usersTable = sqliteTable("users", {
@@ -9,7 +10,7 @@ export const usersTable = sqliteTable("users", {
 	emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
 });
 
-export const sessionTable = sqliteTable("session", {
+export const sessionsTable = sqliteTable("sessions", {
 	id: text("id").primaryKey(),
 	userId: text("user_id")
 		.notNull()
@@ -28,8 +29,12 @@ export const profilesTable = sqliteTable("profiles", {
 	bio: text("bio"),
 	website: text("website"),
 	location: text("location"),
-	createdAt: text("created_at").notNull(),
-	updatedAt: text("updated_at").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
 });
 
 // export const postsTable = sqliteTable("posts", {});

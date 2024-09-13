@@ -8,12 +8,18 @@
 		"db:migrate:remote": "wrangler d1 migrations apply deblog-db --remote"
 	},
 	"dependencies": {
+		"@hono/valibot-validator": "^0.3.0",
+		"@lucia-auth/adapter-sqlite": "^3.0.2",
+		"bcryptjs": "^2.4.3",
 		"drizzle-orm": "^0.33.0",
 		"hono": "^4.6.1",
-		"lucia": "^3.2.0"
+		"lucia": "^3.2.0",
+		"nanoid": "^5.0.7",
+		"valibot": "^0.41.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20240529.0",
+		"@types/bcryptjs": "^2.4.6",
 		"drizzle-kit": "^0.24.2",
 		"wrangler": "^3.57.2"
 	}
