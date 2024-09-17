@@ -30,7 +30,7 @@ export const SignupSchema = pipe(
 			minLength(3, "Name must be at least 3 characters long"),
 			maxLength(120, "Name must be at most 120 characters long")
 		),
-		email: pipe(string(), email()),
+		email: pipe(string(), email("Invalid email address")),
 		username: pipe(
 			string(),
 			minLength(3, "Username must be at least 3 characters long"),

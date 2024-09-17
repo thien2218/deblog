@@ -1,13 +1,13 @@
 import { Context } from "@/context";
 import { Hono } from "hono";
-import { vValidator } from "@hono/valibot-validator";
 import { LoginSchema, SignupSchema } from "@/schemas";
 import { drizzle } from "drizzle-orm/d1";
 import { profilesTable, usersTable } from "@/database/tables";
-import bcrypt from "bcryptjs";
-import { initializeLucia } from "@/services";
+import { hash } from "bcryptjs";
+import { initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
 import { capitalize } from "@/utils";
+import { valibotValidator } from "@/middlewares";
 
 export const authRoutes = new Hono<Context>().basePath("/auth");
 
@@ -23,11 +23,11 @@ export const authRoutes = new Hono<Context>().basePath("/auth");
 // 	);
 // });
 
-authRoutes.post("/signup", vValidator("form", SignupSchema), async (c) => {
-	const { password, name, ...rest } = c.req.valid("form");
+authRoutes.post("/signup", valibotValidator(SignupSchema), async (c) => {
+	const { password, name, ...rest } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);
-	const encryptedPassword = await bcrypt.hash(password, 12);
+	const encryptedPassword = await hash(password, 12);
 	const userId = nanoid(25);
 
 	try {

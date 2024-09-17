@@ -8,8 +8,9 @@
 		"baseUrl": "./src/",
 		"paths": { "@/*": ["*"] },
 		"lib": ["ESNext"],
-		"types": ["@cloudflare/workers-types/2023-07-01"],
+		"types": ["@cloudflare/workers-types/2023-07-01", "node", "jest"],
 		"jsx": "react-jsx",
-		"jsxImportSource": "hono/jsx"
+		"jsxImportSource": "hono/jsx",
+		"esModuleInterop": true
 	}
 }
