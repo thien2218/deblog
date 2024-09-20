@@ -7,4 +7,5 @@ module.exports = {
 	moduleNameMapper: { "^@/(.*)$": "<rootDir>/src/$1" },
 	moduleFileExtensions: ["js", "json", "ts"],
 	verbose: true,
+	clearMocks: true,
 };

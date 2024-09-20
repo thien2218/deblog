@@ -51,7 +51,7 @@ const valibotValidator = <
 			);
 		}
 
-		c.req.addValidatedData("json", result.output as {});
+		c.req.addValidatedData("json", result.output as object);
 		await next();
 	});
 };
