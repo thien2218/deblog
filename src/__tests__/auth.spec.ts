@@ -97,6 +97,11 @@ describe("/api/auth/login (POST)", () => {
 	};
 
 	beforeAll(() => {
+		db.get.mockResolvedValue({
+			id: "userId",
+			encryptedPassword: "encryptedPassword",
+		});
+
 		(drizzle as jest.Mock).mockReturnValue(db);
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
@@ -118,16 +123,13 @@ describe("/api/auth/login (POST)", () => {
 			)
 		);
 		expect(db.prepare).toHaveBeenCalledTimes(1);
-		expect(db.prepare().get).toHaveBeenCalledWith({
+		expect(db.get).toHaveBeenCalledWith({
 			identifier: loginStub().username,
 		});
 	});
 
 	it("should send status code 400 if the user does not exist", async () => {
-		db.prepare.mockReturnValueOnce({
-			get: jest.fn().mockResolvedValue(undefined),
-		});
-
+		db.get.mockResolvedValueOnce(undefined);
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
@@ -138,10 +140,7 @@ describe("/api/auth/login (POST)", () => {
 	});
 
 	it("should send status code 400 if the login method is incorrect", async () => {
-		db.prepare.mockReturnValueOnce({
-			get: jest.fn().mockResolvedValue({ encryptedPassword: null }),
-		});
-
+		db.get.mockResolvedValueOnce({ id: "userId", encryptedPassword: null });
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
@@ -197,17 +196,17 @@ describe("/api/auth/logout (POST)", () => {
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
 
-	it("should send status code 400 if the user is not logged in", async () => {
+	it("should send status code 401 if the user is not authenticated", async () => {
 		lucia.validateSession.mockResolvedValueOnce({
 			session: null,
 			user: null,
 		});
 		const res = await app.request(path, req, { DB: d1 });
 
-		expect(res.status).toBe(400);
+		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual({
-			error: "Bad Request",
-			message: "User is not logged in",
+			error: "Unauthorized",
+			message: "User is not authenticated",
 		});
 	});
 

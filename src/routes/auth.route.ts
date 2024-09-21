@@ -7,10 +7,10 @@ import { compare, hash } from "bcryptjs";
 import { initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
 import { capitalize } from "@/utils";
-import { valibotValidator } from "@/middlewares";
+import { authenticated, valibotValidator } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
 
-export const authRoutes = new Hono<AppEnv>().basePath("/auth");
+const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
 authRoutes.post("/signup", valibotValidator(SignupSchema), async (c) => {
 	const { password, name, ...rest } = c.req.valid("json");
@@ -100,16 +100,8 @@ authRoutes.post("/login", valibotValidator(LoginSchema), async (c) => {
 	return c.json({ message: "User successfully logged in" });
 });
 
-authRoutes.post("/logout", async (c) => {
+authRoutes.post("/logout", authenticated, async (c) => {
 	const session = c.get("session");
-
-	if (!session) {
-		return c.json(
-			{ message: "User is not logged in", error: "Bad Request" },
-			400
-		);
-	}
-
 	const lucia = initializeLucia(c.env.DB);
 	await lucia.invalidateSession(session.id);
 
@@ -120,3 +112,5 @@ authRoutes.post("/logout", async (c) => {
 
 	return c.json({ message: "User successfully logged out" });
 });
+
+export default authRoutes;
