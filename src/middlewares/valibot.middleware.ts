@@ -1,3 +1,4 @@
+import { AppEnv } from "@/context";
 import { Input, MiddlewareHandler, ValidationTargets } from "hono";
 import { createMiddleware } from "hono/factory";
 import {
@@ -36,9 +37,20 @@ const valibotValidator = <
 	V extends I = I
 >(
 	schema: T
-): MiddlewareHandler<any, string, V> => {
+): MiddlewareHandler<AppEnv, string, V> => {
 	return createMiddleware(async (c, next) => {
 		const body = c.get("parsedBody");
+
+		if (!body) {
+			return c.json(
+				{
+					message: "Request body is required",
+					error: "Bad Request",
+				},
+				400
+			);
+		}
+
 		const result = await safeParseAsync(schema, body);
 
 		if (!result.success) {
@@ -51,6 +63,7 @@ const valibotValidator = <
 			);
 		}
 
+		c.set("parsedBody", undefined);
 		c.req.addValidatedData("json", result.output as object);
 		await next();
 	});

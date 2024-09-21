@@ -6,11 +6,14 @@ import { drizzle } from "drizzle-orm/d1";
 import { initializeLucia } from "@/utils";
 import { profilesTable, usersTable } from "@/database/tables";
 import { eq, or, sql } from "drizzle-orm";
+import { db, lucia } from "./mocks";
+import { getCookie } from "hono/cookie";
 
 jest.mock("@/utils");
 jest.mock("bcryptjs");
 jest.mock("nanoid");
 jest.mock("drizzle-orm/d1");
+jest.mock("hono/cookie");
 
 describe("/api/auth/signup (POST)", () => {
 	let d1: D1Database;
@@ -25,19 +28,6 @@ describe("/api/auth/signup (POST)", () => {
 			"Content-Type": "application/json",
 			Origin: "http://localhost:8787",
 		},
-	};
-
-	const lucia = {
-		createSession: jest.fn().mockResolvedValue({ id: "session-id" }),
-		createSessionCookie: jest.fn().mockReturnValue({
-			serialize: jest.fn().mockReturnValue("cookie"),
-		}),
-	};
-
-	const db = {
-		batch: jest.fn(),
-		insert: jest.fn().mockReturnThis(),
-		values: jest.fn().mockReturnThis(),
 	};
 
 	beforeAll(() => {
@@ -96,25 +86,6 @@ describe("/api/auth/login (POST)", () => {
 	let res: Response;
 
 	const path = "/api/auth/login";
-
-	const lucia = {
-		createSession: jest.fn().mockResolvedValue({ id: "session-id" }),
-		createSessionCookie: jest.fn().mockReturnValue({
-			serialize: jest.fn().mockReturnValue("cookie"),
-		}),
-	};
-
-	const db = {
-		select: jest.fn().mockReturnThis(),
-		from: jest.fn().mockReturnThis(),
-		where: jest.fn().mockReturnThis(),
-		prepare: jest.fn().mockReturnValue({
-			get: jest.fn().mockResolvedValue({
-				id: "userId",
-				encryptedPassword: "encryptedPassword",
-			}),
-		}),
-	};
 
 	const req = {
 		method: "POST",
@@ -200,11 +171,53 @@ describe("/api/auth/login (POST)", () => {
 		expect(lucia.createSessionCookie).toHaveBeenCalledWith("session-id");
 	});
 
-	it("should send status code 200 with the cookie if the user is successfully logged in", () => {
+	it("should send status code 200 with the cookie if the user is successfully logged in", async () => {
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Set-Cookie")).toBe("cookie");
-		expect(res.json()).resolves.toEqual({
+		expect(await res.json()).toEqual({
 			message: "User successfully logged in",
+		});
+	});
+});
+
+describe("/api/auth/logout (POST)", () => {
+	let d1: D1Database;
+
+	const path = "/api/auth/logout";
+
+	const req = {
+		method: "POST",
+		headers: {
+			Origin: "http://localhost:8787",
+		},
+	};
+
+	beforeAll(() => {
+		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(initializeLucia as jest.Mock).mockReturnValue(lucia);
+	});
+
+	it("should send status code 400 if the user is not logged in", async () => {
+		lucia.validateSession.mockResolvedValueOnce({
+			session: null,
+			user: null,
+		});
+		const res = await app.request(path, req, { DB: d1 });
+
+		expect(res.status).toBe(400);
+		expect(await res.json()).toEqual({
+			error: "Bad Request",
+			message: "User is not logged in",
+		});
+	});
+
+	it("should send status code 200 with the cookie if the user is successfully logged out", async () => {
+		const res = await app.request(path, req, { DB: d1 });
+
+		expect(res.status).toBe(200);
+		expect(res.headers.get("Set-Cookie")).toBeDefined();
+		expect(await res.json()).toEqual({
+			message: "User successfully logged out",
 		});
 	});
 });

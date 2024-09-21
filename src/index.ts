@@ -1,13 +1,14 @@
 import { Hono } from "hono";
-import { Context } from "./context";
+import { AppEnv } from "./context";
 import { authRoutes } from "./routes";
 import { csrf } from "hono/csrf";
-import { parseBody } from "./middlewares";
+import { parseBody, session } from "./middlewares";
 
-const app = new Hono<Context>().basePath("/api");
+const app = new Hono<AppEnv>().basePath("/api");
 
 // Middlewares
 app.use(csrf({ origin: "http://localhost:8787" }));
+app.use(session);
 app.use(parseBody);
 
 // Routes
