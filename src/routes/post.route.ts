@@ -26,7 +26,7 @@ postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	const posts = await query.all({ offset, limit });
 
 	if (!posts.length) {
-		return c.json({ message: "No blog post found" }, 404);
+		return c.json({ message: "No blog posts found" }, 404);
 	}
 
 	return c.json(posts.map((post) => parse(SelectPostSchema, post)));

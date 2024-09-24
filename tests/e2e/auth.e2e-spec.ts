@@ -1,12 +1,9 @@
-import { compare, hash } from "bcryptjs";
-import app from "../../";
-import { loginStub, signupStub } from "./stubs";
-import { nanoid } from "nanoid";
+import { compare } from "bcryptjs";
+import app from "../../src";
+import { loginStub, signupStub } from "../stubs";
 import { drizzle } from "drizzle-orm/d1";
 import { initializeLucia } from "@/utils";
-import { usersTable } from "@/database/tables";
-import { eq, or, sql } from "drizzle-orm";
-import { db, lucia } from "./mocks";
+import { db, lucia } from "../mocks";
 import { getCookie } from "hono/cookie";
 
 jest.mock("@/utils");
@@ -15,7 +12,7 @@ jest.mock("nanoid");
 jest.mock("drizzle-orm/d1");
 jest.mock("hono/cookie");
 
-describe("/api/auth/signup (POST)", () => {
+describe("POST /api/auth/signup (E2E)", () => {
 	let d1: D1Database;
 	let res: Response;
 
@@ -35,40 +32,19 @@ describe("/api/auth/signup (POST)", () => {
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
 
-	beforeEach(async () => {
-		res = await app.request(path, req, { DB: d1 });
-	});
-
-	it("should hashes the password", () => {
-		expect(hash).toHaveBeenCalledWith(signupStub().password, 11);
-	});
-
-	it("should generate a user id", () => {
-		expect(nanoid).toHaveBeenCalledWith(25);
-	});
-
-	it("should batch insert the payload into user and profile table", () => {
-		expect(db.insert).toHaveBeenCalledWith(usersTable);
-		expect(db.prepare).toHaveBeenCalled();
-		expect(db.execute).toHaveBeenCalled();
-	});
-
-	it("should create a new session for the user", () => {
-		expect(lucia.createSession).toHaveBeenCalledWith("nanoid", {});
-		expect(lucia.createSessionCookie).toHaveBeenCalledWith("session-id");
-	});
-
 	it("should send status code 400 if the email or username already exists", async () => {
 		db.execute.mockRejectedValueOnce({
 			message: "UNIQUE constraint failed: users.email: SQLITE_CONSTRAINT",
 		});
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({ message: "Email already exists" });
 	});
 
 	it("should send status code 201 with the cookie if the user is successfully created", async () => {
+		res = await app.request(path, req, { DB: d1 });
+
 		expect(res.status).toBe(201);
 		expect(res.headers.get("Set-Cookie")).toBe("cookie");
 		expect(await res.json()).toEqual({
@@ -77,7 +53,7 @@ describe("/api/auth/signup (POST)", () => {
 	});
 });
 
-describe("/api/auth/login (POST)", () => {
+describe("POST /api/auth/login (E2E)", () => {
 	let d1: D1Database;
 	let res: Response;
 
@@ -102,31 +78,9 @@ describe("/api/auth/login (POST)", () => {
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
 
-	beforeEach(async () => {
-		res = await app.request(path, req, { DB: d1 });
-	});
-
-	it("should check for user in the database", () => {
-		expect(db.select).toHaveBeenCalledWith({
-			id: usersTable.id,
-			encryptedPassword: usersTable.encryptedPassword,
-		});
-		expect(db.from).toHaveBeenCalledWith(usersTable);
-		expect(db.where).toHaveBeenCalledWith(
-			or(
-				eq(usersTable.email, sql.placeholder("identifier")),
-				eq(usersTable.username, sql.placeholder("identifier"))
-			)
-		);
-		expect(db.prepare).toHaveBeenCalledTimes(1);
-		expect(db.get).toHaveBeenCalledWith({
-			identifier: loginStub().username,
-		});
-	});
-
 	it("should send status code 400 if the user does not exist", async () => {
 		db.get.mockResolvedValueOnce(undefined);
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({ message: "User does not exist" });
@@ -134,7 +88,7 @@ describe("/api/auth/login (POST)", () => {
 
 	it("should send status code 400 if the login method is incorrect", async () => {
 		db.get.mockResolvedValueOnce({ id: "userId", encryptedPassword: null });
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
 		expect(await res.json()).toEqual({ message: "Incorrect login method" });
@@ -142,7 +96,7 @@ describe("/api/auth/login (POST)", () => {
 
 	it("should send status code 400 if the password is incorrect", async () => {
 		(compare as jest.Mock).mockResolvedValueOnce(false);
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(compare).toHaveBeenCalledWith(
 			loginStub().password,
@@ -152,12 +106,9 @@ describe("/api/auth/login (POST)", () => {
 		expect(await res.json()).toEqual({ message: "Incorrect password" });
 	});
 
-	it("should create a new session for the user", () => {
-		expect(lucia.createSession).toHaveBeenCalledWith("userId", {});
-		expect(lucia.createSessionCookie).toHaveBeenCalledWith("session-id");
-	});
-
 	it("should send status code 200 with the cookie if the user is successfully logged in", async () => {
+		res = await app.request(path, req, { DB: d1 });
+
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Set-Cookie")).toBe("cookie");
 		expect(await res.json()).toEqual({
@@ -166,7 +117,8 @@ describe("/api/auth/login (POST)", () => {
 	});
 });
 
-describe("/api/auth/logout (POST)", () => {
+describe("POST /api/auth/logout (E2E)", () => {
+	let res: Response;
 	let d1: D1Database;
 
 	const path = "/api/auth/logout";
@@ -188,7 +140,7 @@ describe("/api/auth/logout (POST)", () => {
 			session: null,
 			user: null,
 		});
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual({
@@ -197,7 +149,7 @@ describe("/api/auth/logout (POST)", () => {
 	});
 
 	it("should send status code 200 with the cookie if the user is successfully logged out", async () => {
-		const res = await app.request(path, req, { DB: d1 });
+		res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(200);
 		expect(res.headers.get("Set-Cookie")).toBeDefined();

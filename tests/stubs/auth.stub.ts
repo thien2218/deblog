@@ -1,4 +1,6 @@
-export const signupStub = () => ({
+import { LoginPayload, SignupPayload } from "@/schemas";
+
+export const signupStub = (): SignupPayload => ({
 	email: "test@gmail.com",
 	password: "password",
 	confirmPassword: "password",
@@ -6,7 +8,7 @@ export const signupStub = () => ({
 	username: "test",
 });
 
-export const loginStub = () => ({
+export const loginStub = (): LoginPayload => ({
 	username: "test",
 	password: "password",
 });

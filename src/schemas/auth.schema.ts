@@ -2,6 +2,7 @@ import {
 	check,
 	email,
 	forward,
+	InferInput,
 	maxLength,
 	minLength,
 	nanoid,
@@ -73,3 +74,6 @@ export const SignupSchema = pipe(
 	),
 	transform(({ confirmPassword, ...rest }) => rest)
 );
+
+export type LoginPayload = InferInput<typeof LoginSchema>;
+export type SignupPayload = InferInput<typeof SignupSchema>;

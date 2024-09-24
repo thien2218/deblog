@@ -1,5 +1,4 @@
-import { date, object, string } from "valibot";
-import { SelectUserSchema } from "./user.schema";
+import { date, InferOutput, object, string } from "valibot";
 
 export const SelectPostSchema = object({
 	post: object({
@@ -10,5 +9,13 @@ export const SelectPostSchema = object({
 		createdAt: date(),
 		updatedAt: date(),
 	}),
-	author: SelectUserSchema,
+	author: object({
+		username: string(),
+		name: string(),
+		profileImage: string(),
+		title: string(),
+		country: string(),
+	}),
 });
+
+export type SelectPost = InferOutput<typeof SelectPostSchema>;
