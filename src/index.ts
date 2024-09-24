@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { AppEnv } from "./context";
-import { authRoutes } from "./routes";
+import { authRoutes, postRoutes } from "./routes";
 import { csrf } from "hono/csrf";
 import { parseBody, session } from "./middlewares";
 
@@ -13,6 +13,7 @@ app.use(parseBody);
 
 // Routes
 app.route("/", authRoutes);
+app.route("/", postRoutes);
 
 app.get("/", (c) => {
 	return c.json({ message: "Hello, world!" });

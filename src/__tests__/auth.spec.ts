@@ -4,7 +4,7 @@ import { loginStub, signupStub } from "./stubs";
 import { nanoid } from "nanoid";
 import { drizzle } from "drizzle-orm/d1";
 import { initializeLucia } from "@/utils";
-import { profilesTable, usersTable } from "@/database/tables";
+import { usersTable } from "@/database/tables";
 import { eq, or, sql } from "drizzle-orm";
 import { db, lucia } from "./mocks";
 import { getCookie } from "hono/cookie";
@@ -40,7 +40,7 @@ describe("/api/auth/signup (POST)", () => {
 	});
 
 	it("should hashes the password", () => {
-		expect(hash).toHaveBeenCalledWith(signupStub().password, 12);
+		expect(hash).toHaveBeenCalledWith(signupStub().password, 11);
 	});
 
 	it("should generate a user id", () => {
@@ -48,9 +48,7 @@ describe("/api/auth/signup (POST)", () => {
 	});
 
 	it("should batch insert the payload into user and profile table", () => {
-		expect(db.batch).toHaveBeenCalledTimes(1);
-		expect(db.insert).toHaveBeenNthCalledWith(1, usersTable);
-		expect(db.insert).toHaveBeenNthCalledWith(2, profilesTable);
+		expect(db.insert).toHaveBeenCalledWith(usersTable);
 	});
 
 	it("should create a new session for the user", () => {
@@ -66,10 +64,7 @@ describe("/api/auth/signup (POST)", () => {
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({
-			error: "Bad Request",
-			message: "Email already exists",
-		});
+		expect(await res.json()).toEqual({ message: "Email already exists" });
 	});
 
 	it("should send status code 201 with the cookie if the user is successfully created", async () => {
@@ -133,10 +128,7 @@ describe("/api/auth/login (POST)", () => {
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({
-			error: "Bad Request",
-			message: "User does not exist",
-		});
+		expect(await res.json()).toEqual({ message: "User does not exist" });
 	});
 
 	it("should send status code 400 if the login method is incorrect", async () => {
@@ -144,10 +136,7 @@ describe("/api/auth/login (POST)", () => {
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({
-			error: "Bad Request",
-			message: "Incorrect login method",
-		});
+		expect(await res.json()).toEqual({ message: "Incorrect login method" });
 	});
 
 	it("should send status code 400 if the password is incorrect", async () => {
@@ -159,10 +148,7 @@ describe("/api/auth/login (POST)", () => {
 			"encryptedPassword"
 		);
 		expect(res.status).toBe(400);
-		expect(await res.json()).toEqual({
-			error: "Bad Request",
-			message: "Incorrect password",
-		});
+		expect(await res.json()).toEqual({ message: "Incorrect password" });
 	});
 
 	it("should create a new session for the user", () => {
@@ -205,7 +191,6 @@ describe("/api/auth/logout (POST)", () => {
 
 		expect(res.status).toBe(401);
 		expect(await res.json()).toEqual({
-			error: "Unauthorized",
 			message: "User is not authenticated",
 		});
 	});

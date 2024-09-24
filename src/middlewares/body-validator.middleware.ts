@@ -7,7 +7,7 @@ import {
 	safeParseAsync,
 } from "valibot";
 
-const valibotValidator = <
+const bodyValidator = <
 	T extends GenericSchema | GenericSchemaAsync,
 	Out = InferOutput<T>,
 	I extends Input = { out: { json: Out } }
@@ -18,25 +18,13 @@ const valibotValidator = <
 		const body = c.get("parsedBody");
 
 		if (!body) {
-			return c.json(
-				{
-					message: "Request body is required",
-					error: "Bad Request",
-				},
-				400
-			);
+			return c.json({ message: "Request body is required" }, 400);
 		}
 
 		const result = await safeParseAsync(schema, body);
 
 		if (!result.success) {
-			return c.json(
-				{
-					message: result.issues[0].message,
-					error: "Bad Request",
-				},
-				400
-			);
+			return c.json({ message: result.issues[0].message }, 400);
 		}
 
 		c.set("parsedBody", undefined);
@@ -45,4 +33,4 @@ const valibotValidator = <
 	});
 };
 
-export default valibotValidator;
+export default bodyValidator;

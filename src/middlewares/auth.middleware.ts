@@ -13,10 +13,7 @@ const auth = createMiddleware<AuthEnv>(async (c, next) => {
 	const session = c.get("session");
 
 	if (!session) {
-		return c.json(
-			{ error: "Unauthorized", message: "User is not authenticated" },
-			401
-		);
+		return c.json({ message: "User is not authenticated" }, 401);
 	}
 
 	return next();
