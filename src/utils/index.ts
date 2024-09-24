@@ -17,12 +17,6 @@ export function initializeLucia(d1: D1Database) {
 	});
 }
 
-declare module "lucia" {
-	interface Register {
-		Lucia: ReturnType<typeof initializeLucia>;
-	}
-}
-
 export const handleUniqueConstraintErr = ({
 	message,
 }: {
@@ -41,3 +35,9 @@ export const handleUniqueConstraintErr = ({
 
 	return { message, status: 500 };
 };
+
+declare module "lucia" {
+	interface Register {
+		Lucia: ReturnType<typeof initializeLucia>;
+	}
+}

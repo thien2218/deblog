@@ -1,6 +1,7 @@
 import { AppEnv } from "@/context";
 import { postsTable, usersTable } from "@/database/tables";
-import { auth, pageQueryValidator } from "@/middlewares";
+import { auth, valibot } from "@/middlewares";
+import { PageQuerySchema } from "@/schemas";
 import { SelectPostSchema } from "@/schemas/post.schema";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -10,7 +11,7 @@ import { parse } from "valibot";
 const postRoutes = new Hono<AppEnv>().basePath("/posts");
 
 // Get many posts
-postRoutes.get("/", pageQueryValidator, async (c) => {
+postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	const { offset, limit } = c.req.valid("query");
 	const db = drizzle(c.env.DB);
 

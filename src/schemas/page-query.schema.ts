@@ -2,19 +2,32 @@ import {
 	check,
 	maxValue,
 	minValue,
-	number,
 	object,
 	pipe,
 	transform,
+	string,
 } from "valibot";
 
 export const PageQuerySchema = pipe(
 	object({
-		page: pipe(number(), minValue(1)),
+		page: pipe(
+			string(),
+			check(
+				(p) => Number.isInteger(parseFloat(p)),
+				"Page must be an integer"
+			),
+			transform((p) => parseInt(p)),
+			minValue(1, "Page's value must be at least 1")
+		),
 		limit: pipe(
-			number(),
-			minValue(5),
-			maxValue(100),
+			string(),
+			check(
+				(l) => Number.isInteger(parseFloat(l)),
+				"Limit must be an integer"
+			),
+			transform((l) => parseInt(l)),
+			minValue(5, "Limit's value must be at least 5"),
+			maxValue(100, "Limit's value must be at most 100"),
 			check((l) => l % 5 === 0, "Limit must be a multiple of 5")
 		),
 	}),

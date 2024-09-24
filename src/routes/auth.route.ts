@@ -6,12 +6,12 @@ import { usersTable } from "@/database/tables";
 import { compare, hash } from "bcryptjs";
 import { handleUniqueConstraintErr, initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
-import { auth, unauth, bodyValidator } from "@/middlewares";
+import { auth, unauth, valibot } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
-authRoutes.post("/signup", unauth, bodyValidator(SignupSchema), async (c) => {
+authRoutes.post("/signup", unauth, valibot("body", SignupSchema), async (c) => {
 	const { password, ...rest } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);
@@ -45,7 +45,7 @@ authRoutes.post("/signup", unauth, bodyValidator(SignupSchema), async (c) => {
 	return c.json({ message: "User successfully created" }, 201);
 });
 
-authRoutes.post("/login", unauth, bodyValidator(LoginSchema), async (c) => {
+authRoutes.post("/login", unauth, valibot("body", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);
