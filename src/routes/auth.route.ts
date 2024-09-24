@@ -7,51 +7,63 @@ import { compare, hash } from "bcryptjs";
 import { initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
 import { capitalize } from "@/utils";
-import { authenticated, valibotValidator } from "@/middlewares";
+import { auth, unauth, valibotValidator } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
-authRoutes.post("/signup", valibotValidator(SignupSchema), async (c) => {
-	const { password, name, ...rest } = c.req.valid("json");
-	const db = drizzle(c.env.DB);
-	const lucia = initializeLucia(c.env.DB);
-	const encryptedPassword = await hash(password, 12);
-	const userId = nanoid(25);
+authRoutes.post(
+	"/signup",
+	unauth,
+	valibotValidator(SignupSchema),
+	async (c) => {
+		const { password, name, ...rest } = c.req.valid("json");
+		const db = drizzle(c.env.DB);
+		const lucia = initializeLucia(c.env.DB);
+		const encryptedPassword = await hash(password, 12);
+		const userId = nanoid(25);
 
-	try {
-		await db.batch([
-			db
-				.insert(usersTable)
-				.values({ id: userId, ...rest, encryptedPassword }),
-			db.insert(profilesTable).values({ userId, name }),
-		]);
-	} catch (error: any) {
-		if ((error.message as string).includes("UNIQUE")) {
-			const field = (error.message as string).split(".")[1].split(": ")[0];
+		try {
+			await db.batch([
+				db
+					.insert(usersTable)
+					.values({ id: userId, ...rest, encryptedPassword }),
+				db.insert(profilesTable).values({ userId, name }),
+			]);
+		} catch (error: any) {
+			if ((error.message as string).includes("UNIQUE")) {
+				const field = (error.message as string)
+					.split(".")[1]
+					.split(": ")[0];
+
+				return c.json(
+					{
+						message: `${capitalize(field)} already exists`,
+						error: "Bad Request",
+					},
+					400
+				);
+			}
 
 			return c.json(
-				{
-					message: `${capitalize(field)} already exists`,
-					error: "Bad Request",
-				},
-				400
+				{ message: "Database error", error: error.message },
+				500
 			);
 		}
 
-		return c.json({ message: "Database error", error: error.message }, 500);
+		const session = await lucia.createSession(userId, {});
+		const serializedCookie = lucia
+			.createSessionCookie(session.id)
+			.serialize();
+
+		c.header("Set-Cookie", serializedCookie, { append: true });
+		c.header("Location", "/home", { append: true });
+
+		return c.json({ message: "User successfully created" }, 201);
 	}
+);
 
-	const session = await lucia.createSession(userId, {});
-	const serializedCookie = lucia.createSessionCookie(session.id).serialize();
-
-	c.header("Set-Cookie", serializedCookie, { append: true });
-	c.header("Location", "/home", { append: true });
-
-	return c.json({ message: "User successfully created" }, 201);
-});
-
-authRoutes.post("/login", valibotValidator(LoginSchema), async (c) => {
+authRoutes.post("/login", unauth, valibotValidator(LoginSchema), async (c) => {
 	const data = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);
@@ -100,7 +112,7 @@ authRoutes.post("/login", valibotValidator(LoginSchema), async (c) => {
 	return c.json({ message: "User successfully logged in" });
 });
 
-authRoutes.post("/logout", authenticated, async (c) => {
+authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
 	const lucia = initializeLucia(c.env.DB);
 	await lucia.invalidateSession(session.id);

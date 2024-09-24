@@ -1,4 +1,3 @@
-import { AppEnv } from "@/context";
 import { Input, MiddlewareHandler } from "hono";
 import { createMiddleware } from "hono/factory";
 import {
@@ -14,7 +13,7 @@ const valibotValidator = <
 	I extends Input = { out: { json: Out } }
 >(
 	schema: T
-): MiddlewareHandler<AppEnv, string, I> => {
+): MiddlewareHandler<any, string, I> => {
 	return createMiddleware(async (c, next) => {
 		const body = c.get("parsedBody");
 

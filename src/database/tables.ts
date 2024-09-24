@@ -22,13 +22,13 @@ export const profilesTable = sqliteTable("profiles", {
 	userId: text("user_id")
 		.primaryKey()
 		.notNull()
-		.references(() => usersTable.id)
-		.unique(),
+		.references(() => usersTable.id),
 	name: text("name").notNull(),
 	profileImage: text("profile_image"),
+	title: text("title"),
 	bio: text("bio"),
 	website: text("website"),
-	location: text("location"),
+	country: text("country"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
@@ -37,4 +37,18 @@ export const profilesTable = sqliteTable("profiles", {
 		.default(sql`(unixepoch())`),
 });
 
-// export const postsTable = sqliteTable("posts", {});
+export const postsTable = sqliteTable("posts", {
+	id: text("id").primaryKey(),
+	authorId: text("author_id")
+		.notNull()
+		.references(() => usersTable.id),
+	title: text("title").notNull().unique(),
+	summary: text("summary").notNull(),
+	markdownUrl: text("markdown_url").notNull(),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});

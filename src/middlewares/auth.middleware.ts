@@ -2,15 +2,14 @@ import { AppEnv } from "@/context";
 import { createMiddleware } from "hono/factory";
 import { Session, User } from "lucia";
 
-interface AuthenticatedEnv extends AppEnv {
+interface AuthEnv extends AppEnv {
 	Variables: {
 		user: User;
 		session: Session;
 	} & AppEnv["Variables"];
-	Bindings: AppEnv["Bindings"];
 }
 
-const authenticated = createMiddleware<AuthenticatedEnv>(async (c, next) => {
+const auth = createMiddleware<AuthEnv>(async (c, next) => {
 	const session = c.get("session");
 
 	if (!session) {
@@ -23,4 +22,4 @@ const authenticated = createMiddleware<AuthenticatedEnv>(async (c, next) => {
 	return next();
 });
 
-export default authenticated;
+export default auth;
