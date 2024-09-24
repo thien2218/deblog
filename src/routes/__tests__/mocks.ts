@@ -44,4 +44,5 @@ export const lucia = {
 	createBlankSessionCookie: jest.fn().mockReturnValue({
 		serialize: jest.fn().mockReturnValue(""),
 	}),
+	sessionCookieName: "cookie-name",
 };

@@ -1,5 +1,22 @@
-export const capitalize = jest.fn((str: string) => {
-	return str.charAt(0).toUpperCase() + str.slice(1);
-});
+import { StatusCode } from "hono/utils/http-status";
+
+export const handleUniqueConstraintErr = ({
+	message,
+}: {
+	message: string;
+}): { message: string; status: StatusCode } => {
+	if (message.includes("UNIQUE")) {
+		const field = message.split(".")[1].split(": ")[0];
+
+		return {
+			message: `${field.charAt(0).toUpperCase()}${field.slice(
+				1
+			)} already exists`,
+			status: 400,
+		};
+	}
+
+	return { message, status: 500 };
+};
 
 export const initializeLucia = jest.fn();

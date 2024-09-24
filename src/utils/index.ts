@@ -23,11 +23,11 @@ declare module "lucia" {
 	}
 }
 
-export const handleUniqueConstraintErr = (
-	err: any
-): { message: string; status: StatusCode } => {
-	const { message } = err as { message: string };
-
+export const handleUniqueConstraintErr = ({
+	message,
+}: {
+	message: string;
+}): { message: string; status: StatusCode } => {
 	if (message.includes("UNIQUE")) {
 		const field = message.split(".")[1].split(": ")[0];
 

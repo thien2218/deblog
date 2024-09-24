@@ -29,12 +29,12 @@ authRoutes.post("/signup", unauth, bodyValidator(SignupSchema), async (c) => {
 		})
 		.prepare();
 
-	await query
-		.execute({ encryptedPassword, ...rest, id: userId })
-		.catch((error: any) => {
-			const { message, status } = handleUniqueConstraintErr(error);
-			return c.json({ message }, status);
-		});
+	try {
+		await query.execute({ encryptedPassword, ...rest, id: userId });
+	} catch (err: any) {
+		const { message, status } = handleUniqueConstraintErr(err);
+		return c.json({ message }, status);
+	}
 
 	const session = await lucia.createSession(userId, {});
 	const serializedCookie = lucia.createSessionCookie(session.id).serialize();

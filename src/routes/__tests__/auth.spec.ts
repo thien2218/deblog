@@ -1,5 +1,5 @@
 import { compare, hash } from "bcryptjs";
-import app from "../";
+import app from "../../";
 import { loginStub, signupStub } from "./stubs";
 import { nanoid } from "nanoid";
 import { drizzle } from "drizzle-orm/d1";
@@ -49,6 +49,8 @@ describe("/api/auth/signup (POST)", () => {
 
 	it("should batch insert the payload into user and profile table", () => {
 		expect(db.insert).toHaveBeenCalledWith(usersTable);
+		expect(db.prepare).toHaveBeenCalled();
+		expect(db.execute).toHaveBeenCalled();
 	});
 
 	it("should create a new session for the user", () => {
@@ -57,10 +59,9 @@ describe("/api/auth/signup (POST)", () => {
 	});
 
 	it("should send status code 400 if the email or username already exists", async () => {
-		db.batch.mockRejectedValueOnce({
+		db.execute.mockRejectedValueOnce({
 			message: "UNIQUE constraint failed: users.email: SQLITE_CONSTRAINT",
 		});
-
 		const res = await app.request(path, req, { DB: d1 });
 
 		expect(res.status).toBe(400);
