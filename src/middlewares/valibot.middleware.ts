@@ -1,5 +1,4 @@
-import { Input, MiddlewareHandler, ValidationTargets } from "hono";
-import { createMiddleware } from "hono/factory";
+import { Input, MiddlewareHandler } from "hono";
 import { HTTPException } from "hono/http-exception";
 import {
 	GenericSchema,
@@ -29,7 +28,7 @@ const valibot = <
 	target: Target,
 	schema: T
 ): MiddlewareHandler<any, string, I> => {
-	return createMiddleware(async (c, next) => {
+	return async (c, next) => {
 		const contentType = c.req.header("Content-Type");
 		let value: object = {};
 
@@ -88,7 +87,7 @@ const valibot = <
 
 		c.req.addValidatedData(target, result.output as object);
 		await next();
-	});
+	};
 };
 
 export default valibot;

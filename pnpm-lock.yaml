@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@hono/valibot-validator':
-        specifier: ^0.3.0
-        version: 0.3.0(hono@4.6.1)(valibot@0.41.0(typescript@5.6.2))
       '@lucia-auth/adapter-sqlite':
         specifier: ^3.0.2
         version: 3.0.2(lucia@3.2.0)
@@ -711,12 +708,6 @@ packages:
   '@fastify/busboy@2.1.1':
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
-
-  '@hono/valibot-validator@0.3.0':
-    resolution: {integrity: sha512-EcGJKzLt11SK4K11yKHrhI93ECtKeSHAnnENHw5tCL0ZhyDIx96avc3Ua8/ri4fwVvRPuOzFQ2OBRsVvwZuqeQ==}
-    peerDependencies:
-      hono: '>=3.9.0'
-      valibot: '>=0.31.0 <1'
 
   '@istanbuljs/load-nyc-config@1.1.0':
     resolution: {integrity: sha512-VjeHSlIzpv/NyD3N0YuHfXOPDIixcA1q2ZV98wsMqcYlPmv2n3Yb2lYP9XMElnaFVXg5A7YLTeLu6V84uQDjmQ==}
@@ -2787,11 +2778,6 @@ snapshots:
     optional: true
 
   '@fastify/busboy@2.1.1': {}
-
-  '@hono/valibot-validator@0.3.0(hono@4.6.1)(valibot@0.41.0(typescript@5.6.2))':
-    dependencies:
-      hono: 4.6.1
-      valibot: 0.41.0(typescript@5.6.2)
 
   '@istanbuljs/load-nyc-config@1.1.0':
     dependencies:

@@ -8,7 +8,6 @@ import {
 	UpdatePostSchema,
 } from "@/schemas/post.schema";
 import { handleDbError } from "@/utils";
-import { vValidator } from "@hono/valibot-validator";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
