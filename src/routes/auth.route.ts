@@ -42,7 +42,10 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	c.header("Set-Cookie", serializedCookie, { append: true });
 	c.header("Location", "/home", { append: true });
 
-	return c.json({ message: "User successfully created" }, 201);
+	return c.json(
+		{ state: "success", message: "User signed up successfully" },
+		201
+	);
 });
 
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
@@ -67,13 +70,19 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const user = await query.get({ identifier });
 
 	if (!user) {
-		return c.json({ message: "User does not exist" }, 400);
+		return c.json(
+			{ state: "error", message: "Incorrect email/username or password" },
+			400
+		);
 	}
 	if (!user.encryptedPassword) {
-		return c.json({ message: "Incorrect login method" }, 400);
+		return c.json({ message: "Incorrect login method", state: "error" }, 400);
 	}
 	if (!(await compare(password, user.encryptedPassword))) {
-		return c.json({ message: "Incorrect password" }, 400);
+		return c.json(
+			{ state: "error", message: "Incorrect email/username or password" },
+			400
+		);
 	}
 
 	const session = await lucia.createSession(user.id, {});
@@ -82,7 +91,7 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	c.header("Set-Cookie", serializedCookie, { append: true });
 	c.header("Location", "/home", { append: true });
 
-	return c.json({ message: "User successfully logged in" });
+	return c.json({ message: "User successfully logged in", state: "success" });
 });
 
 authRoutes.post("/logout", auth, async (c) => {
@@ -95,7 +104,7 @@ authRoutes.post("/logout", auth, async (c) => {
 	});
 	c.header("Location", "/login", { append: true });
 
-	return c.json({ message: "User successfully logged out" });
+	return c.json({ message: "User successfully logged out", state: "success" });
 });
 
 export default authRoutes;

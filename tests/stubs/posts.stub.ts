@@ -1,4 +1,4 @@
-import { SelectPost } from "@/schemas/post.schema";
+import { CreatePost, SelectPost } from "@/schemas";
 
 export const selectPostStub = (): SelectPost => ({
 	post: {
@@ -16,4 +16,10 @@ export const selectPostStub = (): SelectPost => ({
 		title: "Title",
 		country: "Country",
 	},
+});
+
+export const createPostStub = (): CreatePost => ({
+	title: "Title",
+	summary: "Summary for the post",
+	markdownUrl: "https://example.com",
 });

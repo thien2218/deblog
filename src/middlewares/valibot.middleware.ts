@@ -10,7 +10,6 @@ import {
 type Targets<P extends string = string> = {
 	json: any;
 	query: Record<string, string | string[]>;
-	param: Record<P, P extends `${infer _}?` ? string | undefined : string>;
 };
 
 const jsonRegex =
@@ -48,7 +47,7 @@ const valibot = <
 				) {
 					value = await c.req.parseBody().catch(() => {
 						throw new HTTPException(400, {
-							message: "Malformed JSON in request body",
+							message: "Malformed form data in request body",
 						});
 					});
 				}
@@ -61,9 +60,6 @@ const valibot = <
 					})
 				);
 				break;
-			case "param":
-				value = c.req.param() as Record<string, string>;
-				break;
 			default:
 				throw new HTTPException(500, { message: "Invalid target" });
 		}
@@ -75,11 +71,14 @@ const valibot = <
 
 			return c.json(
 				{
+					state: "error",
 					message: issue.message,
-					target,
-					received: issue.input,
-					field: issue.path?.[0].key ?? null,
-					expected: issue.expected,
+					error: {
+						target,
+						field: issue.path?.[0].key ?? null,
+						received: issue.input,
+						expected: issue.expected,
+					},
 				},
 				400
 			);
