@@ -1,31 +1,18 @@
-import {
-	any,
-	object,
-	optional,
-	picklist,
-	pipe,
-	string,
-	transform,
-} from "valibot";
+import { any, check, object, optional, picklist, pipe, string } from "valibot";
 
 export * from "./auth.schema";
 export * from "./page-query.schema";
 export * from "./post.schema";
 
-export const ResponseSchema = pipe(
+export const JSONResponseSchema = pipe(
 	object({
-		state: picklist(["success", "error", "pending", "queued", "blocked"]),
+		state: picklist(["success", "error", "blocked"]),
 		message: string(),
 		payload: optional(any()),
 		error: optional(any()),
 	}),
-	transform((values) => {
-		if (!values.payload) {
-			values.payload = null;
-		}
-		if (!values.error) {
-			values.error = null;
-		}
-		return values;
-	})
+	check(
+		(values) => !values.payload || !values.error,
+		"Payload and error cannot be present at the same time"
+	)
 );

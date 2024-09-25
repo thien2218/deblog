@@ -22,13 +22,27 @@ export const handleDbError = ({ message }: { message: string }) => {
 		const field = message.split(".")[1].split(": ")[0];
 
 		throw new HTTPException(400, {
-			message: `${field.charAt(0).toUpperCase()}${field.slice(
-				1
-			)} already exists`,
+			res: new Response(
+				JSON.stringify({
+					state: "error",
+					message: `This ${field} already been taken`,
+					error: { field, code: "UNIQUE_CONSTRAINT_ERROR" },
+				}),
+				{ headers: { "Content-Type": "application/json" } }
+			),
 		});
 	}
 
-	throw new HTTPException(500, { message });
+	throw new HTTPException(500, {
+		res: new Response(
+			JSON.stringify({
+				state: "error",
+				message,
+				error: { code: "DB_ERROR" },
+			}),
+			{ headers: { "Content-Type": "application/json" } }
+		),
+	});
 };
 
 declare module "lucia" {

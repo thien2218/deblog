@@ -11,6 +11,7 @@ import { eq, or, sql } from "drizzle-orm";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
+// Signup a new user
 authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const { password, ...rest } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
@@ -29,12 +30,9 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 		})
 		.prepare();
 
-	try {
-		await query.execute({ encryptedPassword, ...rest, id: userId });
-	} catch (err: any) {
-		const { message, status } = handleDbError(err);
-		return c.json({ message }, status);
-	}
+	await query
+		.execute({ encryptedPassword, ...rest, id: userId })
+		.catch(handleDbError);
 
 	const session = await lucia.createSession(userId, {});
 	const serializedCookie = lucia.createSessionCookie(session.id).serialize();
@@ -42,12 +40,10 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	c.header("Set-Cookie", serializedCookie, { append: true });
 	c.header("Location", "/home", { append: true });
 
-	return c.json(
-		{ state: "success", message: "User signed up successfully" },
-		201
-	);
+	return c.text("User signed up successfully", 201);
 });
 
+// Login a user
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
@@ -67,22 +63,16 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 		)
 		.prepare();
 
-	const user = await query.get({ identifier });
+	const user = await query.get({ identifier }).catch(handleDbError);
 
 	if (!user) {
-		return c.json(
-			{ state: "error", message: "Incorrect email/username or password" },
-			400
-		);
+		return c.text("Incorrect email/username or password", 400);
 	}
 	if (!user.encryptedPassword) {
-		return c.json({ message: "Incorrect login method", state: "error" }, 400);
+		return c.text("Incorrect login method", 400);
 	}
 	if (!(await compare(password, user.encryptedPassword))) {
-		return c.json(
-			{ state: "error", message: "Incorrect email/username or password" },
-			400
-		);
+		return c.text("Incorrect email/username or password", 400);
 	}
 
 	const session = await lucia.createSession(user.id, {});
@@ -91,9 +81,10 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	c.header("Set-Cookie", serializedCookie, { append: true });
 	c.header("Location", "/home", { append: true });
 
-	return c.json({ message: "User successfully logged in", state: "success" });
+	return c.text("User logged in successfully", 204);
 });
 
+// Logout a user
 authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
 	const lucia = initializeLucia(c.env.DB);
@@ -104,7 +95,7 @@ authRoutes.post("/logout", auth, async (c) => {
 	});
 	c.header("Location", "/login", { append: true });
 
-	return c.json({ message: "User successfully logged out", state: "success" });
+	return c.text("User successfully logged out");
 });
 
 export default authRoutes;

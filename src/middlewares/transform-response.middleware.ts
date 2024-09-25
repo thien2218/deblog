@@ -1,4 +1,4 @@
-import { ResponseSchema } from "@/schemas";
+import { JSONResponseSchema } from "@/schemas";
 import { MiddlewareHandler } from "hono";
 import { parse } from "valibot";
 
@@ -7,9 +7,9 @@ const transformResponse: MiddlewareHandler = async (c, next) => {
 
 	const contentType = c.res.headers.get("content-type");
 
-	if (!contentType?.includes("application/json")) {
+	if (contentType?.includes("application/json")) {
 		const payload = await c.res.json();
-		const parsedPayload = parse(ResponseSchema, payload);
+		const parsedPayload = parse(JSONResponseSchema, payload);
 		c.res = new Response(JSON.stringify(parsedPayload), c.res);
 	}
 };

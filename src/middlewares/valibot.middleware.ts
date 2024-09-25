@@ -38,7 +38,7 @@ const valibot = <
 				if (jsonRegex.test(contentType)) {
 					value = await c.req.json().catch(() => {
 						throw new HTTPException(400, {
-							message: "Malformed JSON in request body",
+							res: new Response("Malformed JSON in request body"),
 						});
 					});
 				} else if (
@@ -47,7 +47,7 @@ const valibot = <
 				) {
 					value = await c.req.parseBody().catch(() => {
 						throw new HTTPException(400, {
-							message: "Malformed form data in request body",
+							res: new Response("Malformed form data in request body"),
 						});
 					});
 				}
@@ -61,7 +61,9 @@ const valibot = <
 				);
 				break;
 			default:
-				throw new HTTPException(500, { message: "Invalid target" });
+				throw new HTTPException(500, {
+					res: new Response("Invalid target"),
+				});
 		}
 
 		const result = await safeParseAsync(schema, value);
