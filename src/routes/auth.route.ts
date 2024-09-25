@@ -4,14 +4,14 @@ import { LoginSchema, SignupSchema } from "@/schemas";
 import { drizzle } from "drizzle-orm/d1";
 import { usersTable } from "@/database/tables";
 import { compare, hash } from "bcryptjs";
-import { handleUniqueConstraintErr, initializeLucia } from "@/utils";
+import { handleDbError, initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
 import { auth, unauth, valibot } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
-authRoutes.post("/signup", unauth, valibot("body", SignupSchema), async (c) => {
+authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const { password, ...rest } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);
@@ -32,7 +32,7 @@ authRoutes.post("/signup", unauth, valibot("body", SignupSchema), async (c) => {
 	try {
 		await query.execute({ encryptedPassword, ...rest, id: userId });
 	} catch (err: any) {
-		const { message, status } = handleUniqueConstraintErr(err);
+		const { message, status } = handleDbError(err);
 		return c.json({ message }, status);
 	}
 
@@ -45,7 +45,7 @@ authRoutes.post("/signup", unauth, valibot("body", SignupSchema), async (c) => {
 	return c.json({ message: "User successfully created" }, 201);
 });
 
-authRoutes.post("/login", unauth, valibot("body", LoginSchema), async (c) => {
+authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
 	const db = drizzle(c.env.DB);
 	const lucia = initializeLucia(c.env.DB);

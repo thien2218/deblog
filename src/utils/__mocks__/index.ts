@@ -1,6 +1,6 @@
 import { StatusCode } from "hono/utils/http-status";
 
-export const handleUniqueConstraintErr = ({
+export const handleDbError = ({
 	message,
 }: {
 	message: string;

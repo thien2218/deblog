@@ -8,8 +8,11 @@ import {
 	safeParseAsync,
 } from "valibot";
 
-type Target = "body" | "query" | "param";
-type HonoTarget = "json" | "query" | "param";
+type Targets<P extends string = string> = {
+	json: any;
+	query: Record<string, string | string[]>;
+	param: Record<P, P extends `${infer _}?` ? string | undefined : string>;
+};
 
 const jsonRegex =
 	/^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
@@ -20,7 +23,8 @@ const urlencodedRegex =
 
 const valibot = <
 	T extends GenericSchema | GenericSchemaAsync,
-	I extends Input = { out: { [K in HonoTarget]: InferOutput<T> } }
+	Target extends keyof Targets,
+	I extends Input = { out: { [K in Target]: InferOutput<T> } }
 >(
 	target: Target,
 	schema: T
@@ -28,34 +32,28 @@ const valibot = <
 	return createMiddleware(async (c, next) => {
 		const contentType = c.req.header("Content-Type");
 		let value: object = {};
-		let honoTarget: HonoTarget = target as HonoTarget;
 
 		switch (target) {
-			case "body":
+			case "json":
 				if (!contentType) break;
 
 				if (jsonRegex.test(contentType)) {
-					try {
-						value = await c.req.json();
-					} catch {
+					value = await c.req.json().catch(() => {
 						throw new HTTPException(400, {
 							message: "Malformed JSON in request body",
 						});
-					}
+					});
 				} else if (
 					multipartRegex.test(contentType) ||
 					urlencodedRegex.test(contentType)
 				) {
-					try {
-						value = await c.req.parseBody();
-					} catch {
+					value = await c.req.parseBody().catch(() => {
 						throw new HTTPException(400, {
-							message: "Malformed form data in request body",
+							message: "Malformed JSON in request body",
 						});
-					}
+					});
 				}
 
-				honoTarget = "json";
 				break;
 			case "query":
 				value = Object.fromEntries(
@@ -88,7 +86,7 @@ const valibot = <
 			);
 		}
 
-		c.req.addValidatedData(honoTarget, result.output as object);
+		c.req.addValidatedData(target, result.output as object);
 		await next();
 	});
 };
