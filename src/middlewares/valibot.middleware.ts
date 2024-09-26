@@ -7,16 +7,16 @@ import {
 	safeParseAsync,
 } from "valibot";
 
-type Targets<P extends string = string> = {
+type Targets = {
 	json: any;
 	query: Record<string, string | string[]>;
 };
 
-const jsonRegex =
+export const jsonRegex =
 	/^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
-const multipartRegex =
+export const multipartRegex =
 	/^multipart\/form-data(;\s?boundary=[a-zA-Z0-9'"()+_,\-./:=?]+)?$/;
-const urlencodedRegex =
+export const urlencodedRegex =
 	/^application\/x-www-form-urlencoded(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
 
 const valibot = <

@@ -10,7 +10,7 @@ export const usersTable = sqliteTable("users", {
 	emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
 	name: text("name").notNull(),
 	profileImage: text("profile_image"),
-	title: text("title"),
+	role: text("role"),
 	bio: text("bio"),
 	website: text("website"),
 	country: text("country"),
@@ -36,7 +36,7 @@ export const postsTable = sqliteTable("posts", {
 		.notNull()
 		.references(() => usersTable.id),
 	title: text("title").notNull().unique(),
-	summary: text("summary").notNull(),
+	description: text("description"),
 	markdownUrl: text("markdown_url").notNull(),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()

@@ -4,7 +4,8 @@ import { auth, valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
 import {
 	CreatePostSchema,
-	SelectPostSchema,
+	PostSchema,
+	SelectPostsSchema,
 	UpdatePostSchema,
 } from "@/schemas/post.schema";
 import { handleDbError } from "@/utils";
@@ -38,38 +39,7 @@ postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	return c.json({
 		message: "Blog posts fetched successfully",
 		state: "success",
-		payload: posts.map((post) => parse(SelectPostSchema, post)),
-	});
-});
-
-// Get one post
-postRoutes.get("/:id", async (c) => {
-	const db = drizzle(c.env.DB);
-	const id = c.req.param("id");
-
-	const query = db
-		.select({ post: postsTable, author: usersTable })
-		.from(postsTable)
-		.where(eq(postsTable.id, sql.placeholder("id")))
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
-		.prepare();
-
-	const post = await query.get({ id }).catch(handleDbError);
-
-	if (!post) {
-		return c.json(
-			{
-				message: `No blog post found from the given ID: ${id}`,
-				state: "error",
-			},
-			404
-		);
-	}
-
-	return c.json({
-		state: "success",
-		message: "Blog post fetched successfully",
-		payload: parse(SelectPostSchema, post),
+		payload: parse(SelectPostsSchema, posts),
 	});
 });
 
@@ -84,7 +54,7 @@ postRoutes.post("/", auth, valibot("json", CreatePostSchema), async (c) => {
 		.values({
 			id: sql.placeholder("id"),
 			title: sql.placeholder("title"),
-			summary: sql.placeholder("summary"),
+			description: sql.placeholder("description"),
 			markdownUrl: sql.placeholder("markdownUrl"),
 			authorId: sql.placeholder("authorId"),
 		})
@@ -99,7 +69,7 @@ postRoutes.post("/", auth, valibot("json", CreatePostSchema), async (c) => {
 		{
 			state: "success",
 			message: "Blog post created successfully",
-			payload: parse(SelectPostSchema, post),
+			payload: parse(PostSchema, post),
 		},
 		201
 	);
