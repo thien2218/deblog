@@ -3,12 +3,12 @@ import { Hono } from "hono";
 
 const userRoutes = new Hono<AppEnv>();
 
-userRoutes.get("/:id");
+userRoutes.get("/:username");
 
-userRoutes.get("/:id/posts");
+userRoutes.get("/:username/posts");
 
-userRoutes.get("/:id/posts/:postId");
+userRoutes.get("/:username/posts/:postId");
 
-// userRoutes.patch("/:id");
+// userRoutes.patch("/:username");
 
 export default userRoutes;

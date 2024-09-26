@@ -131,7 +131,7 @@ describe("POST /api/auth/logout (E2E)", () => {
 	};
 
 	beforeAll(() => {
-		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(getCookie as jest.Mock).mockReturnValue("sessionId");
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
 

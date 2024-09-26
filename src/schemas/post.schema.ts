@@ -14,16 +14,9 @@ import {
 	string,
 	url,
 } from "valibot";
+import { UserInfoSchema } from "./user.schema";
 
-const AuthorSchema = object({
-	username: string(),
-	name: string(),
-	profileImage: string(),
-	role: string(),
-	country: string(),
-});
-
-export const PostSchema = object({
+const PostInfoSchema = object({
 	id: string(),
 	title: string(),
 	description: nullable(string()),
@@ -31,14 +24,21 @@ export const PostSchema = object({
 	updatedAt: date(),
 });
 
-export const SelectPostsSchema = array(
-	object({ post: PostSchema, author: AuthorSchema })
-);
-
-export const SelectPostSchema = object({
-	post: object({ ...PostSchema.entries, markdownUrl: string() }),
-	author: AuthorSchema,
+export const ReadPostSchema = object({
+	post: object({ ...PostInfoSchema.entries, markdownUrl: string() }),
+	author: object({
+		...UserInfoSchema.entries,
+		role: string(),
+		country: string(),
+	}),
 });
+
+export const GetPostSchema = object({
+	post: PostInfoSchema,
+	author: UserInfoSchema,
+});
+
+export const GetPostsSchema = array(GetPostSchema);
 
 export const CreatePostSchema = object({
 	title: pipe(
@@ -68,7 +68,8 @@ export const UpdatePostSchema = pipe(
 	)
 );
 
-export type SelectPosts = InferOutput<typeof SelectPostsSchema>;
-export type SelectPost = InferOutput<typeof SelectPostSchema>;
+export type ReadPost = InferOutput<typeof ReadPostSchema>;
+export type GetPost = InferOutput<typeof GetPostSchema>;
+export type GetPosts = InferOutput<typeof GetPostsSchema>;
 export type CreatePost = InferOutput<typeof CreatePostSchema>;
 export type UpdatePost = InferOutput<typeof UpdatePostSchema>;

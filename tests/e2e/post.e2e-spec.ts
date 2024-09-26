@@ -97,7 +97,7 @@ describe("POST /api/posts (E2E)", () => {
 
 	beforeAll(() => {
 		db.get.mockResolvedValue(selectPostStub());
-		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(getCookie as jest.Mock).mockReturnValue("sessionId");
 		(drizzle as jest.Mock).mockReturnValue(db);
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
@@ -142,7 +142,7 @@ describe("PATCH /api/posts/:id (E2E)", () => {
 
 	beforeAll(() => {
 		db.run.mockResolvedValue({ meta: { rows_written: 1 } });
-		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(getCookie as jest.Mock).mockReturnValue("sessionId");
 		(drizzle as jest.Mock).mockReturnValue(db);
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
@@ -192,7 +192,7 @@ describe("DELETE /api/posts/:id (E2E)", () => {
 
 	beforeAll(() => {
 		db.run.mockResolvedValue({ meta: { rows_written: 1 } });
-		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(getCookie as jest.Mock).mockReturnValue("sessionId");
 		(drizzle as jest.Mock).mockReturnValue(db);
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});

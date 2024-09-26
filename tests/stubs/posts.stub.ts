@@ -1,6 +1,6 @@
-import { CreatePost, SelectPost } from "@/schemas";
+import { CreatePost, GetPost } from "@/schemas";
 
-export const selectPostStub = (): SelectPost => ({
+export const selectPostStub = (): GetPost => ({
 	post: {
 		id: "1",
 		title: "Title",

@@ -14,6 +14,14 @@ export function initializeLucia(d1: D1Database) {
 				secure: process.env.NODE_ENV === "production",
 			},
 		},
+		getUserAttributes: (attr) => {
+			return {
+				id: attr.id,
+				username: attr.username,
+				email: attr.email,
+				profileImage: attr.profileImage,
+			};
+		},
 	});
 }
 
@@ -48,5 +56,11 @@ export const handleDbError = ({ message }: { message: string }) => {
 declare module "lucia" {
 	interface Register {
 		Lucia: ReturnType<typeof initializeLucia>;
+		DataUserInfoAttributes: {
+			id: string;
+			username: string;
+			email: string;
+			profileImage: string;
+		};
 	}
 }

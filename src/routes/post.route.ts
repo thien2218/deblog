@@ -4,8 +4,8 @@ import { auth, valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
 import {
 	CreatePostSchema,
-	PostSchema,
-	SelectPostsSchema,
+	GetPostSchema,
+	GetPostsSchema,
 	UpdatePostSchema,
 } from "@/schemas/post.schema";
 import { handleDbError } from "@/utils";
@@ -39,14 +39,14 @@ postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	return c.json({
 		message: "Blog posts fetched successfully",
 		state: "success",
-		payload: parse(SelectPostsSchema, posts),
+		payload: parse(GetPostsSchema, posts),
 	});
 });
 
 // Create a post
 postRoutes.post("/", auth, valibot("json", CreatePostSchema), async (c) => {
 	const payload = c.req.valid("json");
-	const { id: authorId } = c.get("user");
+	const { id: authorId, ...author } = c.get("user");
 	const db = drizzle(c.env.DB);
 
 	const query = db
@@ -69,7 +69,7 @@ postRoutes.post("/", auth, valibot("json", CreatePostSchema), async (c) => {
 		{
 			state: "success",
 			message: "Blog post created successfully",
-			payload: parse(PostSchema, post),
+			payload: parse(GetPostSchema, { post, author }),
 		},
 		201
 	);

@@ -67,7 +67,7 @@ describe("POST /api/auth/signup", () => {
 
 	it("should generate a session cookie", () => {
 		expect(lucia.createSession).toHaveBeenCalledWith("nanoid", {});
-		expect(lucia.createSessionCookie).toHaveBeenCalledWith("session-id");
+		expect(lucia.createSessionCookie).toHaveBeenCalledWith("sessionId");
 	});
 });
 
@@ -119,7 +119,7 @@ describe("POST /api/auth/login", () => {
 
 	it("should create a new session", () => {
 		expect(lucia.createSession).toHaveBeenCalledWith("userId", {});
-		expect(lucia.createSessionCookie).toHaveBeenCalledWith("session-id");
+		expect(lucia.createSessionCookie).toHaveBeenCalledWith("sessionId");
 	});
 });
 
@@ -127,7 +127,7 @@ describe("POST /api/auth/logout", () => {
 	let d1: D1Database;
 
 	beforeAll(() => {
-		(getCookie as jest.Mock).mockReturnValue("session-id");
+		(getCookie as jest.Mock).mockReturnValue("sessionId");
 		(initializeLucia as jest.Mock).mockReturnValue(lucia);
 	});
 
@@ -143,7 +143,7 @@ describe("POST /api/auth/logout", () => {
 	});
 
 	it("should destroy the session", () => {
-		expect(lucia.invalidateSession).toHaveBeenCalledWith("session-id");
+		expect(lucia.invalidateSession).toHaveBeenCalledWith("sessionId");
 	});
 
 	it("should clear the session cookie with a blank session", () => {

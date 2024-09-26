@@ -5,9 +5,11 @@ export const usersTable = sqliteTable("users", {
 	id: text("id").primaryKey(),
 	email: text("email").notNull().unique(),
 	username: text("username").notNull().unique(),
-	provider: text("provider").default("email"),
+	provider: text("provider").default("email").notNull(),
 	encryptedPassword: text("encrypted_password"),
-	emailVerified: integer("email_verified", { mode: "boolean" }).default(false),
+	emailVerified: integer("email_verified", { mode: "boolean" })
+		.default(false)
+		.notNull(),
 	name: text("name").notNull(),
 	profileImage: text("profile_image"),
 	role: text("role"),

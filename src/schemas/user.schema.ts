@@ -1,10 +1,14 @@
-import { date, object, string } from "valibot";
+import { date, InferOutput, object, string } from "valibot";
 
-export const SelectUserSchema = object({
-	id: string(),
+export const UserInfoSchema = object({
 	username: string(),
 	name: string(),
 	profileImage: string(),
+});
+
+export const GetUserSchema = object({
+	id: string(),
+	...UserInfoSchema.entries,
 	title: string(),
 	bio: string(),
 	website: string(),
@@ -12,3 +16,5 @@ export const SelectUserSchema = object({
 	createdAt: date(),
 	updatedAt: date(),
 });
+
+export type GetUser = InferOutput<typeof GetUserSchema>;

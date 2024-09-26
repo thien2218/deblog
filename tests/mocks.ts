@@ -32,17 +32,22 @@ export const db = {
 };
 
 export const lucia = {
-	createSession: jest.fn().mockResolvedValue({ id: "session-id" }),
+	createSession: jest.fn().mockResolvedValue({ id: "sessionId" }),
 	createSessionCookie: jest.fn().mockReturnValue({
 		serialize: jest.fn().mockReturnValue("cookie"),
 	}),
 	validateSession: jest.fn().mockResolvedValue({
-		session: { id: "session-id", fresh: true },
-		user: { id: "user-id" },
+		session: { id: "sessionId", fresh: true },
+		user: {
+			id: "userId",
+			username: "username",
+			name: "Name",
+			profileImage: "https://www.example.com",
+		},
 	}),
 	invalidateSession: jest.fn(),
 	createBlankSessionCookie: jest.fn().mockReturnValue({
 		serialize: jest.fn().mockReturnValue(""),
 	}),
-	sessionCookieName: "cookie-name",
+	sessionCookieName: "cookieName",
 };
