@@ -7,5 +7,6 @@ export interface AppEnv extends Env {
 	Variables: Auth & {};
 	Bindings: {
 		DB: D1Database;
+		POSTS_BUCKET: R2Bucket;
 	};
 }

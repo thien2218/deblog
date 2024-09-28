@@ -15,6 +15,13 @@
       "when": 1727359811848,
       "tag": "0001_overrated_cerebro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1727494427445,
+      "tag": "0002_shocking_scarlet_spider",
+      "breakpoints": true
     }
   ]
 }

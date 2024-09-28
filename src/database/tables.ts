@@ -39,7 +39,9 @@ export const postsTable = sqliteTable("posts", {
 		.references(() => usersTable.id),
 	title: text("title").notNull().unique(),
 	description: text("description"),
-	markdownUrl: text("markdown_url").notNull(),
+	isPublished: integer("is_published", { mode: "boolean" })
+		.notNull()
+		.default(false),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),

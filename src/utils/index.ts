@@ -56,7 +56,7 @@ export const handleDbError = ({ message }: { message: string }) => {
 declare module "lucia" {
 	interface Register {
 		Lucia: ReturnType<typeof initializeLucia>;
-		DataUserInfoAttributes: {
+		DatabaseUserAttributes: {
 			id: string;
 			username: string;
 			email: string;

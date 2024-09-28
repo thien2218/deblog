@@ -12,13 +12,7 @@ const unauth = createMiddleware<UnauthEnv>(async (c, next) => {
 	const session = c.get("session");
 
 	if (session) {
-		return c.json(
-			{
-				state: "blocked",
-				message: "User is already logged in",
-			},
-			401
-		);
+		return c.text("User is already logged in", 400);
 	}
 
 	await next();

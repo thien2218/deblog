@@ -2,12 +2,7 @@ import { AppEnv } from "@/context";
 import { postsTable, usersTable } from "@/database/tables";
 import { auth, valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
-import {
-	CreatePostSchema,
-	GetPostSchema,
-	GetPostsSchema,
-	UpdatePostSchema,
-} from "@/schemas/post.schema";
+import { GetPostsSchema, UpdatePostSchema } from "@/schemas/post.schema";
 import { handleDbError } from "@/utils";
 import { and, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -43,36 +38,104 @@ postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	});
 });
 
-// Create a post
-postRoutes.post("/", auth, valibot("json", CreatePostSchema), async (c) => {
-	const payload = c.req.valid("json");
-	const { id: authorId, ...author } = c.get("user");
+// Create and get the draft id
+postRoutes.post("/draft", auth, async (c) => {
+	const id = nanoid(25);
 	const db = drizzle(c.env.DB);
+	const { id: authorId } = c.get("user");
 
 	const query = db
 		.insert(postsTable)
 		.values({
 			id: sql.placeholder("id"),
-			title: sql.placeholder("title"),
-			description: sql.placeholder("description"),
-			markdownUrl: sql.placeholder("markdownUrl"),
 			authorId: sql.placeholder("authorId"),
+			title: "Untitled",
 		})
-		.returning()
 		.prepare();
 
-	const post = await query
-		.get({ id: nanoid(25), ...payload, authorId })
-		.catch(handleDbError);
+	await query.run({ id, authorId }).catch(handleDbError);
 
 	return c.json(
 		{
 			state: "success",
-			message: "Blog post created successfully",
-			payload: parse(GetPostSchema, { post, author }),
+			message: "Draft created successfully",
+			payload: { id },
 		},
 		201
 	);
+});
+
+// Update a draft
+postRoutes.patch(
+	"/draft/:id",
+	auth,
+	valibot("json", UpdatePostSchema),
+	async (c) => {
+		const db = drizzle(c.env.DB);
+		const id = c.req.param("id");
+		const { id: authorId, username } = c.get("user");
+		const { compressed, ...payload } = c.req.valid("json");
+
+		if (Object.keys(payload).length > 0) {
+			const query = db
+				.update(postsTable)
+				.set(payload)
+				.where(
+					and(
+						eq(postsTable.id, sql.placeholder("id")),
+						eq(postsTable.authorId, sql.placeholder("authorId")),
+						eq(postsTable.isPublished, false)
+					)
+				)
+				.prepare();
+
+			const { meta } = await query
+				.run({ id, authorId })
+				.catch(handleDbError);
+
+			if (!meta.rows_written) {
+				return c.text(
+					`No draft found from this author with the given id: ${id}`,
+					403
+				);
+			}
+		}
+
+		if (compressed) {
+			await c.env.POSTS_BUCKET.put(`${username}/${id}`, compressed);
+		}
+
+		return c.text("Draft saved successfully");
+	}
+);
+
+// Publish a post
+postRoutes.post("/draft/:id/publish", auth, async (c) => {
+	const db = drizzle(c.env.DB);
+	const id = c.req.param("id");
+	const { id: authorId } = c.get("user");
+
+	const query = db
+		.update(postsTable)
+		.set({ isPublished: true })
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId"))
+			)
+		)
+		.prepare();
+
+	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+
+	if (!meta.rows_written) {
+		return c.text(
+			`No draft found from this author with the given id: ${id}`,
+			403
+		);
+	}
+
+	return c.text("Blog post published successfully");
 });
 
 // Update a post
@@ -88,7 +151,8 @@ postRoutes.patch("/:id", auth, valibot("json", UpdatePostSchema), async (c) => {
 		.where(
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId"))
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.isPublished, true)
 			)
 		)
 		.prepare();
@@ -97,15 +161,15 @@ postRoutes.patch("/:id", auth, valibot("json", UpdatePostSchema), async (c) => {
 
 	if (!meta.rows_written) {
 		return c.text(
-			`No blog post found from this author with the given id: ${id}`,
+			`No published blog post found from this author with the given id: ${id}`,
 			403
 		);
 	}
 
-	return c.text("Blog post updated successfully", 204);
+	return c.text("Blog post updated successfully");
 });
 
-// Delete a post
+// Delete a post/draft
 postRoutes.delete("/:id", auth, async (c) => {
 	const { id: authorId } = c.get("user");
 	const db = drizzle(c.env.DB);
@@ -119,18 +183,21 @@ postRoutes.delete("/:id", auth, async (c) => {
 				eq(postsTable.authorId, sql.placeholder("authorId"))
 			)
 		)
+		.returning({ isPublished: postsTable.isPublished })
 		.prepare();
 
-	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+	const res = await query.get({ id, authorId }).catch(handleDbError);
 
-	if (!meta.rows_written) {
+	if (!res) {
 		return c.text(
 			`No blog post found from this author with the given id: ${id}`,
 			403
 		);
 	}
 
-	return c.text("Blog post deleted successfully", 204);
+	const type = res.isPublished ? "Blog post" : "Draft";
+
+	return c.text(`${type} deleted successfully`);
 });
 
 export default postRoutes;

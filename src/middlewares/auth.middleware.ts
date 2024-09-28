@@ -13,13 +13,7 @@ const auth = createMiddleware<AuthEnv>(async (c, next) => {
 	const session = c.get("session");
 
 	if (!session) {
-		return c.json(
-			{
-				state: "blocked",
-				message: "User is not logged in",
-			},
-			401
-		);
+		return c.text("User must be logged in to use this feature", 401);
 	}
 
 	return next();

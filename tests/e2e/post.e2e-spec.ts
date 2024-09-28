@@ -170,7 +170,7 @@ describe("PATCH /api/posts/:id (E2E)", () => {
 		expect(res.status).toBe(403);
 	});
 
-	it("should send status 204 when the post is updated", async () => {
+	it("should send status 200 when the post is updated", async () => {
 		res = await app.request(path, req, { DB: d1 });
 
 		expect(await res.json()).toEqual({
@@ -220,12 +220,12 @@ describe("DELETE /api/posts/:id (E2E)", () => {
 		expect(res.status).toBe(403);
 	});
 
-	it("should send status 204 when the post is deleted", async () => {
+	it("should send status 200 when the post is deleted", async () => {
 		res = await app.request(path, req, { DB: d1 });
 
 		expect(await res.json()).toEqual({
 			message: "Blog post deleted successfully",
 		});
-		expect(res.status).toBe(204);
+		expect(res.status).toBe(200);
 	});
 });

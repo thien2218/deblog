@@ -81,7 +81,7 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	c.header("Set-Cookie", serializedCookie, { append: true });
 	c.header("Location", "/home", { append: true });
 
-	return c.text("User logged in successfully", 204);
+	return c.text("User logged in successfully");
 });
 
 // Logout a user
