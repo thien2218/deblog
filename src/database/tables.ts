@@ -39,8 +39,7 @@ export const postsTable = sqliteTable("posts", {
 		.references(() => usersTable.id),
 	title: text("title").notNull().unique(),
 	description: text("description"),
-	content: text("content").notNull(),
-	isPublished: integer("is_published", { mode: "boolean" })
+	published: integer("published", { mode: "boolean" })
 		.notNull()
 		.default(false),
 	createdAt: integer("created_at", { mode: "timestamp" })

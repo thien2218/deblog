@@ -19,9 +19,10 @@ postRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
 	const query = db
 		.select({ post: postsTable, author: usersTable })
 		.from(postsTable)
+		.where(eq(postsTable.published, true))
+		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.offset(sql.placeholder("offset"))
 		.limit(sql.placeholder("limit"))
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.prepare();
 
 	const posts = await query.all({ offset, limit }).catch(handleDbError);

@@ -1,9 +1,13 @@
 import { AppEnv } from "@/context";
-import { postsTable, usersTable } from "@/database/tables";
+import { contentsTable, postsTable, usersTable } from "@/database/tables";
 import { auth, valibot } from "@/middlewares";
-import { ReadPostSchema, UpdatePostSchema } from "@/schemas";
+import {
+	ReadPostSchema,
+	UpdatePostContentSchema,
+	UpdatePostMetadataSchema,
+} from "@/schemas";
 import { handleDbError } from "@/utils";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, exists, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono, MiddlewareHandler } from "hono";
 import { User } from "lucia";
@@ -34,7 +38,7 @@ userRoutes.patch("*", auth, isAuthorized);
 userRoutes.delete("*", auth, isAuthorized);
 
 // Get the user's profile
-userRoutes.get("/");
+userRoutes.get("/profile");
 
 // Get the user's posts
 userRoutes.get("/posts");
@@ -42,38 +46,85 @@ userRoutes.get("/posts");
 // Read post from a user
 userRoutes.get("/posts/:id");
 
-// Update a post
-userRoutes.patch("/posts/:id", valibot("json", UpdatePostSchema), async (c) => {
-	const payload = c.req.valid("json");
-	const { id: authorId } = c.get("user") as User;
-	const db = drizzle(c.env.DB);
-	const id = c.req.param("id");
+// Update a post/draft metadata
+userRoutes.put(
+	"/write-ups/:id/metadata",
+	valibot("json", UpdatePostMetadataSchema),
+	async (c) => {
+		const payload = c.req.valid("json");
+		const { id: authorId } = c.get("user") as User;
+		const db = drizzle(c.env.DB);
+		const id = c.req.param("id");
 
-	const query = db
-		.update(postsTable)
-		.set(payload)
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.isPublished, true)
+		const query = db
+			.update(postsTable)
+			.set(payload)
+			.where(
+				and(
+					eq(postsTable.id, sql.placeholder("id")),
+					eq(postsTable.authorId, sql.placeholder("authorId"))
+				)
 			)
-		)
-		.prepare();
+			.prepare();
 
-	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+		const { meta } = await query.run({ id, authorId }).catch(handleDbError);
 
-	if (!meta.rows_written) {
-		return c.text(
-			`No published blog post found from this author with the given id: ${id}`,
-			403
-		);
+		if (!meta.rows_written) {
+			return c.text(
+				`No published blog post from this author with the given id: ${id}`,
+				403
+			);
+		}
+
+		return c.text("Blog post updated successfully");
 	}
+);
 
-	return c.text("Blog post updated successfully");
-});
+// Update a post/draft content
+userRoutes.put(
+	"/write-ups/:id/content",
+	valibot("json", UpdatePostContentSchema),
+	async (c) => {
+		const { id: authorId } = c.get("user") as User;
+		const db = drizzle(c.env.DB);
+		const id = c.req.param("id");
+		const payload = c.req.valid("json");
 
-// Delete a post/draft
+		const subquery = db
+			.select()
+			.from(postsTable)
+			.where(
+				and(
+					eq(postsTable.id, sql.placeholder("id")),
+					eq(postsTable.authorId, sql.placeholder("authorId"))
+				)
+			);
+
+		const query = db
+			.update(contentsTable)
+			.set(payload)
+			.where(
+				and(
+					eq(contentsTable.postId, sql.placeholder("id")),
+					exists(subquery)
+				)
+			)
+			.prepare();
+
+		const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+
+		if (!meta.rows_written) {
+			return c.text(
+				`No published blog post from this author with the given id: ${id}`,
+				403
+			);
+		}
+
+		return c.text("Blog post content updated successfully");
+	}
+);
+
+// Delete a post
 userRoutes.delete("/posts/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const db = drizzle(c.env.DB);
@@ -85,24 +136,21 @@ userRoutes.delete("/posts/:id", async (c) => {
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
 				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.isPublished, true)
+				eq(postsTable.published, true)
 			)
 		)
-		.returning({ isPublished: postsTable.isPublished })
 		.prepare();
 
-	const res = await query.get({ id, authorId }).catch(handleDbError);
+	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
 
-	if (!res) {
+	if (!meta.rows_written) {
 		return c.text(
-			`No blog post found from this author with the given id: ${id}`,
+			`No published blog post from this author with the given id: ${id}`,
 			403
 		);
 	}
 
-	const type = res.isPublished ? "Blog post" : "Draft";
-
-	return c.text(`${type} deleted successfully`);
+	return c.text("Blog post deleted successfully");
 });
 
 // Get many drafts of a user
@@ -115,16 +163,21 @@ userRoutes.get("/drafts/:id", async (c) => {
 	const db = drizzle(c.env.DB);
 
 	const query = db
-		.select({ post: postsTable, author: usersTable })
+		.select({
+			post: postsTable,
+			author: usersTable,
+			content: contentsTable.content,
+		})
 		.from(postsTable)
 		.where(
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
 				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.isPublished, false)
+				eq(postsTable.published, false)
 			)
 		)
 		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.innerJoin(contentsTable, eq(postsTable.id, contentsTable.postId))
 		.prepare();
 
 	const data = await query.get({ id, authorId }).catch(handleDbError);
@@ -146,17 +199,10 @@ userRoutes.post("/drafts", async (c) => {
 	const id = nanoid(25);
 	const db = drizzle(c.env.DB);
 
-	const query = db
-		.insert(postsTable)
-		.values({
-			id: sql.placeholder("id"),
-			authorId: sql.placeholder("authorId"),
-			title: "Untitled",
-			content: "",
-		})
-		.prepare();
-
-	await query.run({ id, authorId }).catch(handleDbError);
+	await db.batch([
+		db.insert(postsTable).values({ id, authorId, title: "Untitled" }),
+		db.insert(contentsTable).values({ postId: id, content: "" }),
+	]);
 
 	return c.json(
 		{
@@ -168,41 +214,6 @@ userRoutes.post("/drafts", async (c) => {
 	);
 });
 
-// Update a draft
-userRoutes.patch(
-	"/drafts/:id",
-	valibot("json", UpdatePostSchema),
-	async (c) => {
-		const { id: authorId } = c.get("user") as User;
-		const id = c.req.param("id");
-		const payload = c.req.valid("json");
-		const db = drizzle(c.env.DB);
-
-		const query = db
-			.update(postsTable)
-			.set(payload)
-			.where(
-				and(
-					eq(postsTable.id, sql.placeholder("id")),
-					eq(postsTable.authorId, sql.placeholder("authorId")),
-					eq(postsTable.isPublished, false)
-				)
-			)
-			.prepare();
-
-		const { meta } = await query.run({ id, authorId }).catch(handleDbError);
-
-		if (!meta.rows_written) {
-			return c.text(
-				`No draft found from this author with the given id: ${id}`,
-				403
-			);
-		}
-
-		return c.text("Draft saved successfully");
-	}
-);
-
 // Publish a post
 userRoutes.post("/drafts/:id/publish", async (c) => {
 	const { id: authorId } = c.get("user") as User;
@@ -210,8 +221,13 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 	const db = drizzle(c.env.DB);
 
 	const selectQuery = db
-		.select()
+		.select({
+			authorId: postsTable.authorId,
+			published: postsTable.published,
+			content: contentsTable.content,
+		})
 		.from(postsTable)
+		.innerJoin(contentsTable, eq(postsTable.id, contentsTable.postId))
 		.where(eq(postsTable.id, sql.placeholder("id")))
 		.prepare();
 
@@ -223,7 +239,7 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 	if (post.authorId !== authorId) {
 		return c.text("You are not the author of this draft", 403);
 	}
-	if (post.isPublished) {
+	if (post.published) {
 		return c.text("This post is already published", 400);
 	}
 	if (post.content.length < 10) {
@@ -232,7 +248,7 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 
 	const updateQuery = db
 		.update(postsTable)
-		.set({ isPublished: true })
+		.set({ published: true })
 		.where(eq(postsTable.id, sql.placeholder("id")))
 		.prepare();
 
@@ -253,7 +269,7 @@ userRoutes.delete("/drafts/:id", async (c) => {
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
 				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.isPublished, false)
+				eq(postsTable.published, false)
 			)
 		)
 		.prepare();
@@ -261,10 +277,7 @@ userRoutes.delete("/drafts/:id", async (c) => {
 	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
 
 	if (!meta.rows_affected) {
-		return c.text(
-			`No draft found from this author with the given id: ${id}`,
-			403
-		);
+		return c.text(`No draft from this author with the given id: ${id}`, 403);
 	}
 
 	return c.text("Draft deleted successfully");
