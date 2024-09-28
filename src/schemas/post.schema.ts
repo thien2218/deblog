@@ -11,10 +11,8 @@ import {
 	partial,
 	pipe,
 	string,
-	transform,
 } from "valibot";
 import { UserInfoSchema } from "./user.schema";
-import { compress } from "lzutf8";
 
 const PostInfoSchema = object({
 	id: string(),
@@ -65,18 +63,10 @@ export const UpdatePostSchema = pipe(
 	check(
 		(v) => Object.keys(v).length > 0,
 		"At least one field must be provided to update the post"
-	),
-	transform(({ content, ...rest }) => {
-		return {
-			...rest,
-			...(!!content
-				? { compressed: compress(content) as Uint8Array }
-				: undefined),
-		};
-	})
+	)
 );
 
 export type ReadPost = InferOutput<typeof ReadPostSchema>;
 export type GetPost = InferOutput<typeof GetPostSchema>;
-export type GetPosts = InferOutput<typeof GetPostsSchema>;
+export type GetPosts = GetPost[];
 export type UpdatePost = InferOutput<typeof UpdatePostSchema>;

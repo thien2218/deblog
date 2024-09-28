@@ -39,6 +39,7 @@ export const postsTable = sqliteTable("posts", {
 		.references(() => usersTable.id),
 	title: text("title").notNull().unique(),
 	description: text("description"),
+	content: text("content").notNull(),
 	isPublished: integer("is_published", { mode: "boolean" })
 		.notNull()
 		.default(false),
@@ -48,4 +49,11 @@ export const postsTable = sqliteTable("posts", {
 	updatedAt: integer("updated_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
+});
+
+export const contentsTable = sqliteTable("contents", {
+	postId: text("post_id")
+		.primaryKey()
+		.references(() => postsTable.id),
+	content: text("content").notNull(),
 });
