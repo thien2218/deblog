@@ -5,6 +5,7 @@ import {
 	InferOutput,
 	maxLength,
 	minLength,
+	nonEmpty,
 	nullable,
 	object,
 	optional,
@@ -71,7 +72,7 @@ export const UpdatePostMetadataSchema = pipe(
 export const UpdatePostContentSchema = object({
 	content: pipe(
 		string(),
-		minLength(10, "Blog content must be at least 10 characters long"),
+		nonEmpty("Blog content cannot be empty"),
 		maxLength(64 * 1024, "Blog content cannot be too long")
 	),
 });

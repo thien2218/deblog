@@ -28,7 +28,7 @@ postRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
 	const posts = await query.all({ offset, limit }).catch(handleDbError);
 
 	if (!posts.length) {
-		return c.json({ message: "No blog posts found", state: "error" }, 404);
+		return c.json({ message: "No blog posts found", state: "success" }, 404);
 	}
 
 	return c.json({

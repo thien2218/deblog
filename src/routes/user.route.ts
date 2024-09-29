@@ -2,12 +2,14 @@ import { AppEnv } from "@/context";
 import { contentsTable, postsTable, usersTable } from "@/database/tables";
 import { auth, valibot } from "@/middlewares";
 import {
+	GetPostsSchema,
+	PageQuerySchema,
 	ReadPostSchema,
 	UpdatePostContentSchema,
 	UpdatePostMetadataSchema,
 } from "@/schemas";
 import { handleDbError } from "@/utils";
-import { and, eq, exists, sql } from "drizzle-orm";
+import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono, MiddlewareHandler } from "hono";
 import { User } from "lucia";
@@ -34,11 +36,15 @@ const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
 const userRoutes = new Hono<AppEnv>().basePath("/:username");
 
 userRoutes.use("/drafts/*", auth, isAuthorized);
+userRoutes.put("*", auth, isAuthorized);
 userRoutes.patch("*", auth, isAuthorized);
 userRoutes.delete("*", auth, isAuthorized);
 
 // Get the user's profile
 userRoutes.get("/profile");
+
+// Update user profile
+userRoutes.patch("/profile");
 
 // Get the user's posts
 userRoutes.get("/posts");
@@ -124,8 +130,8 @@ userRoutes.put(
 	}
 );
 
-// Delete a post
-userRoutes.delete("/posts/:id", async (c) => {
+// Delete a post/draft
+userRoutes.delete("/write-ups/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const db = drizzle(c.env.DB);
 	const id = c.req.param("id");
@@ -135,26 +141,61 @@ userRoutes.delete("/posts/:id", async (c) => {
 		.where(
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.published, true)
+				eq(postsTable.authorId, sql.placeholder("authorId"))
 			)
 		)
+		.returning({ isPublished: postsTable.published })
 		.prepare();
 
-	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+	const data = await query.get({ id, authorId }).catch(handleDbError);
 
-	if (!meta.rows_written) {
+	if (!data) {
 		return c.text(
-			`No published blog post from this author with the given id: ${id}`,
+			`No post/draft found from this author with the given id: ${id}`,
 			403
 		);
 	}
 
-	return c.text("Blog post deleted successfully");
+	const type = data.isPublished ? "Blog post" : "Draft";
+
+	return c.text(`${type} deleted successfully`);
 });
 
 // Get many drafts of a user
-userRoutes.get("/drafts");
+userRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
+	const { id: authorId } = c.get("user") as User;
+	const db = drizzle(c.env.DB);
+	const { offset, limit } = c.req.valid("query");
+
+	const query = db
+		.select({ post: postsTable, author: usersTable })
+		.from(postsTable)
+		.where(
+			and(
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, false)
+			)
+		)
+		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.orderBy(desc(postsTable.createdAt))
+		.limit(sql.placeholder("limit"))
+		.offset(sql.placeholder("offset"))
+		.prepare();
+
+	const data = await query
+		.all({ authorId, limit, offset })
+		.catch(handleDbError);
+
+	if (!data.length) {
+		return c.json({ state: "success", message: "No drafts found" }, 404);
+	}
+
+	return c.json({
+		state: "success",
+		message: "Drafts fetched successfully",
+		payload: parse(GetPostsSchema, data),
+	});
+});
 
 // Get a draft
 userRoutes.get("/drafts/:id", async (c) => {
@@ -183,7 +224,7 @@ userRoutes.get("/drafts/:id", async (c) => {
 	const data = await query.get({ id, authorId }).catch(handleDbError);
 
 	if (!data) {
-		return c.json({ state: "error", message: "Draft not found" }, 404);
+		return c.json({ state: "success", message: "Draft not found" }, 404);
 	}
 
 	return c.json({
@@ -242,7 +283,7 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 	if (post.published) {
 		return c.text("This post is already published", 400);
 	}
-	if (post.content.length < 10) {
+	if (post.content.length < 1000) {
 		return c.text("Post content is too short to be published", 400);
 	}
 
@@ -256,34 +297,5 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 
 	return c.text("Blog post published successfully");
 });
-
-// Delete a draft
-userRoutes.delete("/drafts/:id", async (c) => {
-	const { id: authorId } = c.get("user") as User;
-	const id = c.req.param("id");
-	const db = drizzle(c.env.DB);
-
-	const query = db
-		.delete(postsTable)
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.published, false)
-			)
-		)
-		.prepare();
-
-	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
-
-	if (!meta.rows_affected) {
-		return c.text(`No draft from this author with the given id: ${id}`, 403);
-	}
-
-	return c.text("Draft deleted successfully");
-});
-
-// Update user profile
-userRoutes.patch("/");
 
 export default userRoutes;
