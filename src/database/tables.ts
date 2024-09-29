@@ -49,10 +49,3 @@ export const postsTable = sqliteTable("posts", {
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
-
-export const contentsTable = sqliteTable("contents", {
-	postId: text("post_id")
-		.primaryKey()
-		.references(() => postsTable.id),
-	content: text("content").notNull(),
-});

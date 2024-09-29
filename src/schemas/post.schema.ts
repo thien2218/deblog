@@ -11,7 +11,6 @@ import {
 	optional,
 	pipe,
 	string,
-	transform,
 } from "valibot";
 import { UserInfoSchema } from "./user.schema";
 
@@ -23,21 +22,14 @@ const PostInfoSchema = object({
 	updatedAt: date(),
 });
 
-export const ReadPostSchema = pipe(
-	object({
-		post: PostInfoSchema,
-		author: object({
-			...UserInfoSchema.entries,
-			role: nullable(string()),
-			country: nullable(string()),
-		}),
-		content: string(),
+export const ReadPostSchema = object({
+	post: object({ ...PostInfoSchema.entries, content: string() }),
+	author: object({
+		...UserInfoSchema.entries,
+		role: nullable(string()),
+		country: nullable(string()),
 	}),
-	transform((v) => ({
-		post: { ...v.post, content: v.content },
-		author: v.author,
-	}))
-);
+});
 
 export const GetPostsSchema = array(
 	object({

@@ -1,5 +1,5 @@
 import { AppEnv } from "@/context";
-import { contentsTable, postsTable, usersTable } from "@/database/tables";
+import { postsTable, usersTable } from "@/database/tables";
 import { valibot } from "@/middlewares";
 import {
 	GetPostsSchema,
@@ -77,7 +77,7 @@ userRoutes.put(
 
 		if (!meta.rows_written) {
 			return c.text(
-				`No published blog post from this author with the given id: ${id}`,
+				"No post/draft from this author with the given post id",
 				403
 			);
 		}
@@ -92,39 +92,42 @@ userRoutes.put(
 	valibot("json", UpdatePostContentSchema),
 	async (c) => {
 		const { id: authorId } = c.get("user") as User;
-		const db = drizzle(c.env.DB);
 		const id = c.req.param("id");
-		const payload = c.req.valid("json");
+		const { content } = c.req.valid("json");
+		const db = drizzle(c.env.DB);
+		const bucket = c.env.POSTS_BUCKET;
 
-		const subquery = db
-			.select()
-			.from(postsTable)
-			.where(
-				and(
-					eq(postsTable.id, sql.placeholder("id")),
-					eq(postsTable.authorId, sql.placeholder("authorId"))
-				)
-			);
-
-		const query = db
-			.update(contentsTable)
-			.set(payload)
-			.where(
-				and(
-					eq(contentsTable.postId, sql.placeholder("id")),
-					exists(subquery)
-				)
+		const query = db.select().from(
+			exists(
+				db
+					.select({ n: sql`1` })
+					.from(postsTable)
+					.where(
+						and(
+							eq(postsTable.id, sql.placeholder("id")),
+							eq(postsTable.authorId, sql.placeholder("authorId"))
+						)
+					)
 			)
-			.prepare();
+		);
 
-		const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+		const notFound = !(await query
+			.get({ id, authorId })
+			.catch(handleDbError));
 
-		if (!meta.rows_written) {
-			return c.text(
-				`No published blog post from this author with the given id: ${id}`,
-				403
-			);
+		if (notFound) {
+			return c.text("No post/draft found with the given id", 404);
 		}
+
+		try {
+			// Check if the post exists in the bucket
+			await bucket.head(`${authorId}/${id}`);
+		} catch (error) {
+			console.log(error);
+			return c.text("No post/draft found in the bucket", 404);
+		}
+
+		await bucket.put(`${authorId}/${id}`, content);
 
 		return c.text("Blog post content updated successfully");
 	}
@@ -133,8 +136,9 @@ userRoutes.put(
 // Delete a post/draft
 userRoutes.delete("/write-ups/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
-	const db = drizzle(c.env.DB);
 	const id = c.req.param("id");
+	const db = drizzle(c.env.DB);
+	const bucket = c.env.POSTS_BUCKET;
 
 	const query = db
 		.delete(postsTable)
@@ -151,10 +155,12 @@ userRoutes.delete("/write-ups/:id", async (c) => {
 
 	if (!data) {
 		return c.text(
-			`No post/draft found from this author with the given id: ${id}`,
+			"No post/draft found from this author with the given post id",
 			403
 		);
 	}
+
+	await bucket.delete(`${authorId}/${id}`);
 
 	const type = data.isPublished ? "Blog post" : "Draft";
 
@@ -202,13 +208,10 @@ userRoutes.get("/drafts/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
 	const db = drizzle(c.env.DB);
+	const bucket = c.env.POSTS_BUCKET;
 
 	const query = db
-		.select({
-			post: postsTable,
-			author: usersTable,
-			content: contentsTable.content,
-		})
+		.select({ post: postsTable, author: usersTable })
 		.from(postsTable)
 		.where(
 			and(
@@ -218,7 +221,6 @@ userRoutes.get("/drafts/:id", async (c) => {
 			)
 		)
 		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
-		.innerJoin(contentsTable, eq(postsTable.id, contentsTable.postId))
 		.prepare();
 
 	const data = await query.get({ id, authorId }).catch(handleDbError);
@@ -226,6 +228,16 @@ userRoutes.get("/drafts/:id", async (c) => {
 	if (!data) {
 		return c.json({ state: "success", message: "Draft not found" }, 404);
 	}
+
+	const obj = await bucket.get(`${authorId}/${id}`);
+
+	if (!obj) {
+		return c.text("No draft found in the bucket", 404);
+	}
+
+	const content = await obj.text();
+	// @ts-ignore
+	data.post.content = content;
 
 	return c.json({
 		state: "success",
@@ -239,11 +251,19 @@ userRoutes.post("/drafts", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = nanoid(25);
 	const db = drizzle(c.env.DB);
+	const bucket = c.env.POSTS_BUCKET;
 
-	await db.batch([
-		db.insert(postsTable).values({ id, authorId, title: "Untitled" }),
-		db.insert(contentsTable).values({ postId: id, content: "" }),
-	]);
+	const query = db
+		.insert(postsTable)
+		.values({
+			id: sql.placeholder("id"),
+			authorId: sql.placeholder("authorId"),
+			title: "Untitled",
+		})
+		.prepare();
+
+	await query.run({ id, authorId }).catch(handleDbError);
+	await bucket.put(`${authorId}/${id}`, "");
 
 	return c.json(
 		{
@@ -260,40 +280,37 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
 	const db = drizzle(c.env.DB);
+	const bucket = c.env.POSTS_BUCKET;
 
-	const selectQuery = db
-		.select({
-			authorId: postsTable.authorId,
-			published: postsTable.published,
-			content: contentsTable.content,
-		})
-		.from(postsTable)
-		.innerJoin(contentsTable, eq(postsTable.id, contentsTable.postId))
-		.where(eq(postsTable.id, sql.placeholder("id")))
-		.prepare();
+	const obj = await bucket.get(`${authorId}/${id}`);
 
-	const post = await selectQuery.get({ id }).catch(handleDbError);
+	if (!obj) {
+		return c.text("No draft found in the bucket", 404);
+	}
 
-	if (!post) {
-		return c.text(`Draft not found with the given id: ${id}`, 404);
-	}
-	if (post.authorId !== authorId) {
-		return c.text("You are not the author of this draft", 403);
-	}
-	if (post.published) {
-		return c.text("This post is already published", 400);
-	}
-	if (post.content.length < 1000) {
+	const content = await obj.text();
+
+	if (content.length < 1000) {
 		return c.text("Post content is too short to be published", 400);
 	}
 
-	const updateQuery = db
+	const query = db
 		.update(postsTable)
 		.set({ published: true })
-		.where(eq(postsTable.id, sql.placeholder("id")))
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, false)
+			)
+		)
 		.prepare();
 
-	await updateQuery.run({ id, authorId }).catch(handleDbError);
+	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+
+	if (!meta.rows_updated) {
+		return c.text("No draft found with the given id", 404);
+	}
 
 	return c.text("Blog post published successfully");
 });
