@@ -6,8 +6,9 @@ import { usersTable } from "@/database/tables";
 import { compare, hash } from "bcryptjs";
 import { handleDbError, initializeLucia } from "@/utils";
 import { nanoid } from "nanoid";
-import { auth, unauth, valibot } from "@/middlewares";
+import { unauth, valibot } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
+import { Session } from "lucia";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
@@ -85,8 +86,8 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 });
 
 // Logout a user
-authRoutes.post("/logout", auth, async (c) => {
-	const session = c.get("session");
+authRoutes.post("/logout", async (c) => {
+	const session = c.get("session") as Session;
 	const lucia = initializeLucia(c.env.DB);
 	await lucia.invalidateSession(session.id);
 

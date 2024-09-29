@@ -15,9 +15,9 @@ migrations_dir = "./src/database/migrations"
 # binding = "MY_KV_NAMESPACE"
 # id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 
-# [[r2_buckets]]
-# binding = "POSTS_BUCKET"
-# bucket_name = "posts"
+[[r2_buckets]]
+binding = "POSTS_BUCKET"
+bucket_name = "posts"
 
 # [ai]
 # binding = "AI"

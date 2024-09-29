@@ -1,6 +1,6 @@
 import { AppEnv } from "@/context";
 import { contentsTable, postsTable, usersTable } from "@/database/tables";
-import { auth, valibot } from "@/middlewares";
+import { valibot } from "@/middlewares";
 import {
 	GetPostsSchema,
 	PageQuerySchema,
@@ -35,10 +35,10 @@ const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 const userRoutes = new Hono<AppEnv>().basePath("/:username");
 
-userRoutes.use("/drafts/*", auth, isAuthorized);
-userRoutes.put("*", auth, isAuthorized);
-userRoutes.patch("*", auth, isAuthorized);
-userRoutes.delete("*", auth, isAuthorized);
+userRoutes.use("/drafts/*", isAuthorized);
+userRoutes.put("*", isAuthorized);
+userRoutes.patch("*", isAuthorized);
+userRoutes.delete("*", isAuthorized);
 
 // Get the user's profile
 userRoutes.get("/profile");
