@@ -8,6 +8,7 @@ import {
 	UpdatePostContentSchema,
 	UpdatePostMetadataSchema,
 } from "@/schemas";
+import { GetUserSchema, UpdateProfileSchema } from "@/schemas/user.schema";
 import { handleDbError } from "@/utils";
 import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -41,16 +42,133 @@ userRoutes.patch("*", isAuthorized);
 userRoutes.delete("*", isAuthorized);
 
 // Get the user's profile
-userRoutes.get("/profile");
+userRoutes.get("/profile", async (c) => {
+	const username = c.req.param("username");
+	const db = drizzle(c.env.DB);
+
+	const query = db
+		.select()
+		.from(usersTable)
+		.where(eq(usersTable.username, sql.placeholder("username")))
+		.prepare();
+
+	const data = await query.get({ username }).catch(handleDbError);
+
+	if (!data) {
+		return c.json({ state: "success", message: "User not found" }, 404);
+	}
+
+	return c.json({
+		state: "success",
+		message: "User fetched successfully",
+		payload: parse(GetUserSchema, data),
+	});
+});
 
 // Update user profile
-userRoutes.patch("/profile");
+userRoutes.patch(
+	"/profile",
+	valibot("json", UpdateProfileSchema),
+	async (c) => {
+		const { id: userId } = c.get("user") as User;
+		const payload = c.req.valid("json");
+		const db = drizzle(c.env.DB);
+
+		const query = db
+			.update(usersTable)
+			.set(payload)
+			.where(eq(usersTable.id, sql.placeholder("userId")))
+			.prepare();
+
+		const { meta } = await query.run({ userId }).catch(handleDbError);
+
+		if (!meta.rows_updated) {
+			return c.text("User not found", 404);
+		}
+
+		return c.text("User profile updated successfully");
+	}
+);
 
 // Get the user's posts
-userRoutes.get("/posts");
+userRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
+	const { id: authorId } = c.get("user") as User;
+	const db = drizzle(c.env.DB);
+	const { offset, limit } = c.req.valid("query");
+
+	const query = db
+		.select({ post: postsTable, author: usersTable })
+		.from(postsTable)
+		.where(
+			and(
+				eq(usersTable.username, sql.placeholder("username")),
+				eq(postsTable.authorId, usersTable.id),
+				eq(postsTable.published, true)
+			)
+		)
+		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.orderBy(desc(postsTable.createdAt))
+		.limit(sql.placeholder("limit"))
+		.offset(sql.placeholder("offset"))
+		.prepare();
+
+	const data = await query
+		.all({ authorId, limit, offset })
+		.catch(handleDbError);
+
+	if (!data.length) {
+		return c.json({ state: "success", message: "No posts found" }, 404);
+	}
+
+	return c.json({
+		state: "success",
+		message: "Posts fetched successfully",
+		payload: parse(GetPostsSchema, data),
+	});
+});
 
 // Read post from a user
-userRoutes.get("/posts/:id");
+userRoutes.get("/posts/:id", async (c) => {
+	const { id: authorId } = c.get("user") as User;
+	const id = c.req.param("id");
+	const db = drizzle(c.env.DB);
+	const bucket = c.env.POSTS_BUCKET;
+
+	const query = db
+		.select({ post: postsTable, author: usersTable })
+		.from(postsTable)
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, true)
+			)
+		)
+		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.prepare();
+
+	const data = await query.get({ id, authorId }).catch(handleDbError);
+
+	if (!data) {
+		return c.json({ state: "success", message: "Post not found" }, 404);
+	}
+
+	const obj = await bucket.get(`${authorId}/${id}`);
+
+	if (!obj) {
+		return c.text("No post found in the bucket", 404);
+	}
+
+	const content = await obj.text();
+	// @ts-ignore
+	data.post.content = content;
+
+	return c.json({
+		state: "success",
+		message: "Post fetched successfully",
+		payload: parse(ReadPostSchema, data),
+	});
+});
 
 // Update a post/draft metadata
 userRoutes.put(
