@@ -8,11 +8,11 @@ export const JSONResponseSchema = pipe(
 	object({
 		state: picklist(["success", "error", "blocked"]),
 		message: string(),
-		payload: optional(any()),
+		output: optional(any()),
 		error: optional(any()),
 	}),
 	check(
-		(values) => !values.payload || !values.error,
-		"Payload and error cannot be present at the same time"
+		(values) => !values.output || !values.error,
+		"Output and error cannot be present at the same time"
 	)
 );

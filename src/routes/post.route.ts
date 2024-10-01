@@ -1,5 +1,5 @@
 import { AppEnv } from "@/context";
-import { postsTable, usersTable } from "@/database/tables";
+import { postsTable, savedPostsTable, usersTable } from "@/database/tables";
 import { valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
 import { GetPostsSchema } from "@/schemas/post.schema";
@@ -7,6 +7,7 @@ import { handleDbError } from "@/utils";
 import { eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
+import { User } from "lucia";
 import { parse } from "valibot";
 
 const postRoutes = new Hono<AppEnv>();
@@ -34,7 +35,29 @@ postRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
 	return c.json({
 		message: "Blog posts fetched successfully",
 		state: "success",
-		payload: parse(GetPostsSchema, posts),
+		output: parse(GetPostsSchema, posts),
+	});
+});
+
+// Save a post
+postRoutes.post("/posts/:id/save", async (c) => {
+	const postId = c.req.param("id");
+	const { id: userId } = c.get("user") as User;
+	const db = drizzle(c.env.DB);
+
+	const query = db
+		.insert(savedPostsTable)
+		.values({
+			postId: sql.placeholder("postId"),
+			userId: sql.placeholder("userId"),
+		})
+		.prepare();
+
+	await query.run({ postId, userId }).catch(handleDbError);
+
+	return c.json({
+		message: "Post saved successfully",
+		state: "success",
 	});
 });
 

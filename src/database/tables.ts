@@ -1,5 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+	integer,
+	primaryKey,
+	sqliteTable,
+	text,
+} from "drizzle-orm/sqlite-core";
 
 export const usersTable = sqliteTable("users", {
 	id: text("id").primaryKey(),
@@ -49,3 +54,22 @@ export const postsTable = sqliteTable("posts", {
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
+
+export const savedPostsTable = sqliteTable(
+	"saved_posts",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => usersTable.id),
+		postId: text("post_id")
+			.notNull()
+			.references(() => postsTable.id),
+		savedAt: integer("saved_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.userId, table.postId] }),
+	})
+);

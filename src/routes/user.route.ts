@@ -1,6 +1,6 @@
 import { AppEnv } from "@/context";
-import { postsTable, usersTable } from "@/database/tables";
-import { valibot } from "@/middlewares";
+import { postsTable, savedPostsTable, usersTable } from "@/database/tables";
+import { auth, valibot } from "@/middlewares";
 import {
 	GetPostsSchema,
 	PageQuerySchema,
@@ -8,7 +8,7 @@ import {
 	UpdatePostContentSchema,
 	UpdatePostMetadataSchema,
 } from "@/schemas";
-import { GetUserSchema, UpdateProfileSchema } from "@/schemas/user.schema";
+import { GetProfileSchema, UpdateProfileSchema } from "@/schemas/user.schema";
 import { handleDbError } from "@/utils";
 import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
@@ -61,7 +61,7 @@ userRoutes.get("/profile", async (c) => {
 	return c.json({
 		state: "success",
 		message: "User fetched successfully",
-		payload: parse(GetUserSchema, data),
+		output: parse(GetProfileSchema, data),
 	});
 });
 
@@ -123,7 +123,7 @@ userRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
 	return c.json({
 		state: "success",
 		message: "Posts fetched successfully",
-		payload: parse(GetPostsSchema, data),
+		output: parse(GetPostsSchema, data),
 	});
 });
 
@@ -166,9 +166,55 @@ userRoutes.get("/posts/:id", async (c) => {
 	return c.json({
 		state: "success",
 		message: "Post fetched successfully",
-		payload: parse(ReadPostSchema, data),
+		output: parse(ReadPostSchema, data),
 	});
 });
+
+// Get saved posts of a user
+userRoutes.get(
+	"/posts/saved",
+	auth,
+	isAuthorized,
+	valibot("query", PageQuerySchema),
+	async (c) => {
+		const { id: userId } = c.get("user") as User;
+		const db = drizzle(c.env.DB);
+		const { offset, limit } = c.req.valid("query");
+
+		const query = db
+			.select({ post: postsTable, author: usersTable })
+			.from(savedPostsTable)
+			.where(
+				and(
+					eq(savedPostsTable.userId, sql.placeholder("userId")),
+					eq(postsTable.id, savedPostsTable.postId)
+				)
+			)
+			.innerJoin(postsTable, eq(postsTable.id, savedPostsTable.postId))
+			.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+			.orderBy(desc(savedPostsTable.savedAt))
+			.limit(sql.placeholder("limit"))
+			.offset(sql.placeholder("offset"))
+			.prepare();
+
+		const data = await query
+			.all({ userId, limit, offset })
+			.catch(handleDbError);
+
+		if (!data.length) {
+			return c.json(
+				{ state: "success", message: "No saved posts found" },
+				404
+			);
+		}
+
+		return c.json({
+			state: "success",
+			message: "Saved posts fetched successfully",
+			output: parse(GetPostsSchema, data),
+		});
+	}
+);
 
 // Update a post/draft metadata
 userRoutes.put(
@@ -317,7 +363,7 @@ userRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
 	return c.json({
 		state: "success",
 		message: "Drafts fetched successfully",
-		payload: parse(GetPostsSchema, data),
+		output: parse(GetPostsSchema, data),
 	});
 });
 
@@ -360,7 +406,7 @@ userRoutes.get("/drafts/:id", async (c) => {
 	return c.json({
 		state: "success",
 		message: "Draft fetched successfully",
-		payload: parse(ReadPostSchema, data),
+		output: parse(ReadPostSchema, data),
 	});
 });
 
@@ -387,7 +433,7 @@ userRoutes.post("/drafts", async (c) => {
 		{
 			state: "success",
 			message: "Draft created successfully",
-			payload: { id },
+			output: { id },
 		},
 		201
 	);

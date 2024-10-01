@@ -20,7 +20,7 @@ export const UserInfoSchema = object({
 	profileImage: nullable(string()),
 });
 
-export const GetUserSchema = object({
+export const GetProfileSchema = object({
 	id: string(),
 	...UserInfoSchema.entries,
 	role: nullable(string()),
@@ -62,5 +62,5 @@ export const UpdateProfileSchema = partial(
 	})
 );
 
-export type GetUser = InferOutput<typeof GetUserSchema>;
+export type GetProfile = InferOutput<typeof GetProfileSchema>;
 export type UpdateProfile = InferOutput<typeof UpdateProfileSchema>;
