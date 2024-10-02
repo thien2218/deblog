@@ -1,11 +1,9 @@
 import { countryCodes } from "@/utils";
 import {
 	check,
-	date,
 	InferOutput,
 	maxLength,
 	minLength,
-	nullable,
 	object,
 	partial,
 	picklist,
@@ -14,21 +12,6 @@ import {
 	string,
 	url,
 } from "valibot";
-
-export const UserInfoSchema = object({
-	username: string(),
-	name: string(),
-	profileImage: nullable(string()),
-});
-
-export const GetProfileSchema = object({
-	...UserInfoSchema.entries,
-	role: nullable(string()),
-	bio: nullable(string()),
-	website: nullable(string()),
-	country: nullable(string()),
-	joinedSince: date(),
-});
 
 export const UpdateProfileSchema = pipe(
 	partial(
@@ -64,5 +47,4 @@ export const UpdateProfileSchema = pipe(
 	check((v) => Object.keys(v).length > 0, "No fields to update")
 );
 
-export type GetProfile = InferOutput<typeof GetProfileSchema>;
 export type UpdateProfile = InferOutput<typeof UpdateProfileSchema>;

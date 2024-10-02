@@ -1,42 +1,14 @@
 import {
-	array,
 	check,
-	date,
 	InferOutput,
 	maxLength,
 	minLength,
 	nonEmpty,
-	nullable,
 	object,
 	optional,
 	pipe,
 	string,
 } from "valibot";
-import { UserInfoSchema } from "./user.schema";
-
-const PostInfoSchema = object({
-	id: string(),
-	title: string(),
-	description: nullable(string()),
-	createdAt: date(),
-	updatedAt: date(),
-});
-
-export const ReadPostSchema = object({
-	post: object({ ...PostInfoSchema.entries, content: string() }),
-	author: object({
-		...UserInfoSchema.entries,
-		role: nullable(string()),
-		country: nullable(string()),
-	}),
-});
-
-export const GetPostsSchema = array(
-	object({
-		post: PostInfoSchema,
-		author: UserInfoSchema,
-	})
-);
 
 export const UpdatePostMetadataSchema = pipe(
 	object({
@@ -69,6 +41,5 @@ export const UpdatePostContentSchema = object({
 	),
 });
 
-export type ReadPost = InferOutput<typeof ReadPostSchema>;
-export type GetPosts = InferOutput<typeof GetPostsSchema>;
-export type UpdatePost = InferOutput<typeof UpdatePostMetadataSchema>;
+export type UpdatePostMetadata = InferOutput<typeof UpdatePostMetadataSchema>;
+export type UpdatePostContent = InferOutput<typeof UpdatePostContentSchema>;

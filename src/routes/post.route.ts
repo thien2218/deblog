@@ -11,16 +11,16 @@ const postRoutes = new Hono<AppEnv>().basePath("/posts");
 postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	const pageQuery = c.req.valid("query");
 
-	const posts = await selectPosts(c.get("db"), pageQuery);
+	const data = await selectPosts(c.get("db"), pageQuery);
 
-	if (!posts.length) {
+	if (!data.length) {
 		return c.json({ message: "No blog posts found", state: "success" }, 404);
 	}
 
 	return c.json({
 		message: "Blog posts fetched successfully",
 		state: "success",
-		output: posts,
+		output: data,
 	});
 });
 

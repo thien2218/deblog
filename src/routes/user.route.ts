@@ -7,22 +7,20 @@ import {
 	updateProfile,
 	updatePostMetadata,
 	selectExistsPost,
+	deletePost,
+	selectDraftsFromUser,
+	selectDraftFromAuthor,
+	publishPost,
 } from "@/database/queries";
-import { postsTable, usersTable } from "@/database/tables";
 import { auth, valibot } from "@/middlewares";
 import {
-	GetPostsSchema,
 	PageQuerySchema,
-	ReadPostSchema,
 	UpdatePostContentSchema,
 	UpdatePostMetadataSchema,
 } from "@/schemas";
 import { UpdateProfileSchema } from "@/schemas/user.schema";
-import { handleDbError } from "@/utils";
-import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { Hono, MiddlewareHandler } from "hono";
 import { User } from "lucia";
-import { parse } from "valibot";
 
 const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const username = c.req.param("username");
@@ -88,20 +86,20 @@ userRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
 	const username = c.req.param("username");
 	const pageQuery = c.req.valid("query");
 
-	const posts = await selectPostsFromAuthor(c.get("db"), username, pageQuery);
+	const data = await selectPostsFromAuthor(c.get("db"), username, pageQuery);
 
-	if (!posts.length) {
+	if (!data.length) {
 		return c.json({ state: "success", message: "No posts found" }, 404);
 	}
 
 	return c.json({
 		state: "success",
 		message: "Posts fetched successfully",
-		output: posts,
+		output: data,
 	});
 });
 
-// Read post from a user
+// Read post from an author
 userRoutes.get("/posts/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
@@ -124,10 +122,7 @@ userRoutes.get("/posts/:id", async (c) => {
 	return c.json({
 		state: "success",
 		message: "Post fetched successfully",
-		output: {
-			post: { ...data.post, content },
-			author: data.author,
-		},
+		output: { ...data, content },
 	});
 });
 
@@ -138,7 +133,7 @@ userRoutes.get(
 	isAuthorized,
 	valibot("query", PageQuerySchema),
 	async (c) => {
-		const { id: userId } = c.get("user");
+		const { id: userId, email, ...author } = c.get("user");
 		const pageQuery = c.req.valid("query");
 
 		const posts = await selectSavedPostsFromUser(
@@ -157,7 +152,7 @@ userRoutes.get(
 		return c.json({
 			state: "success",
 			message: "Saved posts fetched successfully",
-			output: posts,
+			output: posts.map((post) => ({ post, author })),
 		});
 	}
 );
@@ -199,9 +194,9 @@ userRoutes.put(
 		const { content } = c.req.valid("json");
 		const bucket = c.env.POSTS_BUCKET;
 
-		const notFound = await selectExistsPost(c.get("db"), id, authorId);
+		const existsInDB = await selectExistsPost(c.get("db"), id, authorId);
 
-		if (notFound) {
+		if (!existsInDB) {
 			return c.text("No post/draft found with the given id", 404);
 		}
 
@@ -223,21 +218,9 @@ userRoutes.put(
 userRoutes.delete("/write-ups/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
-	const db = c.get("db");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const query = db
-		.delete(postsTable)
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId"))
-			)
-		)
-		.returning({ isPublished: postsTable.published })
-		.prepare();
-
-	const data = await query.get({ id, authorId }).catch(handleDbError);
+	const data = await deletePost(c.get("db"), id, authorId);
 
 	if (!data) {
 		return c.text(
@@ -255,63 +238,31 @@ userRoutes.delete("/write-ups/:id", async (c) => {
 
 // Get many drafts of a user
 userRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
-	const { id: authorId } = c.get("user") as User;
-	const db = c.get("db");
-	const { offset, limit } = c.req.valid("query");
+	const { id: authorId, email, ...author } = c.get("user") as User;
+	const pageQuery = c.req.valid("query");
 
-	const query = db
-		.select({ post: postsTable, author: usersTable })
-		.from(postsTable)
-		.where(
-			and(
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.published, false)
-			)
-		)
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
-		.orderBy(desc(postsTable.createdAt))
-		.limit(sql.placeholder("limit"))
-		.offset(sql.placeholder("offset"))
-		.prepare();
+	const posts = await selectDraftsFromUser(c.get("db"), authorId, pageQuery);
 
-	const data = await query
-		.all({ authorId, limit, offset })
-		.catch(handleDbError);
-
-	if (!data.length) {
+	if (!posts.length) {
 		return c.json({ state: "success", message: "No drafts found" }, 404);
 	}
 
 	return c.json({
 		state: "success",
 		message: "Drafts fetched successfully",
-		output: parse(GetPostsSchema, data),
+		output: posts.map((post) => ({ post, author })),
 	});
 });
 
-// Get a draft
+// Read a draft
 userRoutes.get("/drafts/:id", async (c) => {
-	const { id: authorId } = c.get("user") as User;
+	const { id: authorId, email, ...author } = c.get("user") as User;
 	const id = c.req.param("id");
-	const db = c.get("db");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const query = db
-		.select({ post: postsTable, author: usersTable })
-		.from(postsTable)
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.published, false)
-			)
-		)
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
-		.prepare();
+	const post = await selectDraftFromAuthor(c.get("db"), id, authorId);
 
-	const data = await query.get({ id, authorId }).catch(handleDbError);
-
-	if (!data) {
+	if (!post) {
 		return c.json({ state: "success", message: "Draft not found" }, 404);
 	}
 
@@ -322,21 +273,18 @@ userRoutes.get("/drafts/:id", async (c) => {
 	}
 
 	const content = await obj.text();
-	// @ts-ignore
-	data.post.content = content;
 
 	return c.json({
 		state: "success",
 		message: "Draft fetched successfully",
-		output: parse(ReadPostSchema, data),
+		output: { post, author, content },
 	});
 });
 
 // Publish a post
 userRoutes.post("/drafts/:id/publish", async (c) => {
-	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
-	const db = c.get("db");
+	const { id: authorId } = c.get("user") as User;
 	const bucket = c.env.POSTS_BUCKET;
 
 	const obj = await bucket.get(`${authorId}/${id}`);
@@ -351,19 +299,7 @@ userRoutes.post("/drafts/:id/publish", async (c) => {
 		return c.text("Post content is too short to be published", 400);
 	}
 
-	const query = db
-		.update(postsTable)
-		.set({ published: true })
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
-				eq(postsTable.published, false)
-			)
-		)
-		.prepare();
-
-	const { meta } = await query.run({ id, authorId }).catch(handleDbError);
+	const { meta } = await publishPost(c.get("db"), id, authorId);
 
 	if (!meta.rows_updated) {
 		return c.text("No draft found with the given id", 404);

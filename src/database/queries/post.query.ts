@@ -2,7 +2,7 @@ import { DrizzleD1Database } from "drizzle-orm/d1";
 import { postsTable, savedPostsTable, usersTable } from "../tables";
 import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
-import { PageQuery, UpdatePost } from "@/schemas";
+import { PageQuery, UpdatePostMetadata } from "@/schemas";
 
 const postSchema = {
 	id: postsTable.id,
@@ -64,11 +64,10 @@ export const selectSavedPostsFromUser = async (
 	pageQuery: PageQuery
 ) => {
 	const query = db
-		.select({ post: postSchema, author: authorSchema })
+		.select(postSchema)
 		.from(savedPostsTable)
 		.where(eq(savedPostsTable.userId, sql.placeholder("userId")))
 		.innerJoin(postsTable, eq(postsTable.id, savedPostsTable.postId))
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.orderBy(desc(savedPostsTable.savedAt))
 		.limit(sql.placeholder("limit"))
 		.offset(sql.placeholder("offset"))
@@ -107,7 +106,7 @@ export const savePost = async (
 		})
 		.prepare();
 
-	return query.run({ postId, userId }).catch(handleDbError);
+	return query.execute({ postId, userId }).catch(handleDbError);
 };
 
 export const readPost = async (
@@ -142,7 +141,7 @@ export const updatePostMetadata = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string,
-	payload: UpdatePost
+	payload: UpdatePostMetadata
 ) => {
 	const query = db
 		.update(postsTable)
@@ -177,5 +176,86 @@ export const selectExistsPost = async (
 		)
 	);
 
-	return !(await query.get({ id, authorId }).catch(handleDbError));
+	return Boolean(await query.get({ id, authorId }).catch(handleDbError));
+};
+
+export const deletePost = async (
+	db: DrizzleD1Database,
+	id: string,
+	authorId: string
+) => {
+	const query = db
+		.delete(postsTable)
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId"))
+			)
+		)
+		.returning({ isPublished: postsTable.published })
+		.prepare();
+
+	return query.get({ id, authorId }).catch(handleDbError);
+};
+
+export const selectDraftsFromUser = async (
+	db: DrizzleD1Database,
+	authorId: string,
+	pageQuery: PageQuery
+) => {
+	const query = db
+		.select(postSchema)
+		.from(postsTable)
+		.where(
+			and(
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, false)
+			)
+		)
+		.orderBy(desc(postsTable.createdAt))
+		.limit(sql.placeholder("limit"))
+		.offset(sql.placeholder("offset"))
+		.prepare();
+
+	return query.all({ authorId, ...pageQuery }).catch(handleDbError);
+};
+
+export const selectDraftFromAuthor = async (
+	db: DrizzleD1Database,
+	id: string,
+	authorId: string
+) => {
+	const query = db
+		.select(postSchema)
+		.from(postsTable)
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, false)
+			)
+		)
+		.prepare();
+
+	return query.get({ id, authorId }).catch(handleDbError);
+};
+
+export const publishPost = async (
+	db: DrizzleD1Database,
+	id: string,
+	authorId: string
+) => {
+	const query = db
+		.update(postsTable)
+		.set({ published: true })
+		.where(
+			and(
+				eq(postsTable.id, sql.placeholder("id")),
+				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.published, false)
+			)
+		)
+		.prepare();
+
+	return query.run({ id, authorId }).catch(handleDbError);
 };
