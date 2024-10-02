@@ -6,6 +6,7 @@ import {
 	pipe,
 	transform,
 	string,
+	InferOutput,
 } from "valibot";
 
 export const PageQuerySchema = pipe(
@@ -33,3 +34,5 @@ export const PageQuerySchema = pipe(
 	}),
 	transform(({ page, limit }) => ({ offset: (page - 1) * limit, limit }))
 );
+
+export type PageQuery = InferOutput<typeof PageQuerySchema>;

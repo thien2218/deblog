@@ -1,37 +1,21 @@
 import { AppEnv } from "@/context";
 import { Hono } from "hono";
 import { LoginSchema, SignupSchema } from "@/schemas";
-import { usersTable } from "@/database/tables";
 import { compare, hash } from "bcryptjs";
-import { handleDbError } from "@/utils";
 import { nanoid } from "nanoid";
 import { auth, unauth, valibot } from "@/middlewares";
-import { eq, or, sql } from "drizzle-orm";
+import { insertUser, selectLoginUser } from "@/database/queries";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
 // Signup a new user
 authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const { password, ...rest } = c.req.valid("json");
-	const db = c.get("db");
 	const lucia = c.get("lucia");
 	const encryptedPassword = await hash(password, 11);
 	const userId = nanoid(25);
 
-	const query = db
-		.insert(usersTable)
-		.values({
-			id: sql.placeholder("id"),
-			name: sql.placeholder("name"),
-			email: sql.placeholder("email"),
-			username: sql.placeholder("username"),
-			encryptedPassword: sql.placeholder("encryptedPassword"),
-		})
-		.prepare();
-
-	await query
-		.execute({ encryptedPassword, ...rest, id: userId })
-		.catch(handleDbError);
+	await insertUser(c.get("db"), { encryptedPassword, ...rest, id: userId });
 
 	const session = await lucia.createSession(userId, {});
 	const serializedCookie = lucia.createSessionCookie(session.id).serialize();
@@ -45,24 +29,9 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 // Login a user
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
-	const db = c.get("db");
 	const lucia = c.get("lucia");
 
-	const query = db
-		.select({
-			id: usersTable.id,
-			encryptedPassword: usersTable.encryptedPassword,
-		})
-		.from(usersTable)
-		.where(
-			or(
-				eq(usersTable.email, sql.placeholder("identifier")),
-				eq(usersTable.username, sql.placeholder("identifier"))
-			)
-		)
-		.prepare();
-
-	const user = await query.get({ identifier }).catch(handleDbError);
+	const user = await selectLoginUser(c.get("db"), identifier);
 
 	if (!user) {
 		return c.text("Incorrect email/username or password", 400);
@@ -98,14 +67,14 @@ authRoutes.post("/logout", auth, async (c) => {
 	return c.text("User successfully logged out");
 });
 
-// Get the current user's profile
+// Get the current user's basic info
 authRoutes.get("/me", auth, async (c) => {
 	const user = c.get("user");
 
 	return c.json(
 		{
 			state: "success",
-			message: "User profile fetched successfully",
+			message: "User info fetched successfully",
 			output: user,
 		},
 		200
