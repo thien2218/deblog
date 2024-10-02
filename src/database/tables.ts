@@ -21,10 +21,7 @@ export const usersTable = sqliteTable("users", {
 	bio: text("bio"),
 	website: text("website"),
 	country: text("country"),
-	createdAt: integer("created_at", { mode: "timestamp" })
-		.notNull()
-		.default(sql`(unixepoch())`),
-	updatedAt: integer("updated_at", { mode: "timestamp" })
+	joinedSince: integer("joined_since", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
 });

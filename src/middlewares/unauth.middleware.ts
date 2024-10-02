@@ -8,7 +8,7 @@ const unauth = createMiddleware<AppEnv>(async (c, next) => {
 		return c.text("User is already logged in", 400);
 	}
 
-	await next();
+	return next();
 });
 
 export default unauth;

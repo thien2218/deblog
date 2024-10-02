@@ -19,15 +19,16 @@ export const multipartRegex =
 export const urlencodedRegex =
 	/^application\/x-www-form-urlencoded(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
 
-const valibot = <
-	Target extends keyof Targets,
-	T extends GenericSchema | GenericSchemaAsync,
-	I extends Input = { out: { [K in Target]: InferOutput<T> } }
->(
-	target: Target,
-	schema: T
-): MiddlewareHandler<any, string, I> => {
-	return async (c, next) => {
+const valibot =
+	<
+		Target extends keyof Targets,
+		T extends GenericSchema | GenericSchemaAsync,
+		I extends Input = { out: { [K in Target]: InferOutput<T> } }
+	>(
+		target: Target,
+		schema: T
+	): MiddlewareHandler<any, string, I> =>
+	async (c, next) => {
 		const contentType = c.req.header("Content-Type");
 		let value: object = {};
 
@@ -87,8 +88,7 @@ const valibot = <
 		}
 
 		c.req.addValidatedData(target, result.output as object);
-		await next();
+		return next();
 	};
-};
 
 export default valibot;

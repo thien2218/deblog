@@ -1,1 +1,1 @@
-export const getCookie = jest.fn().mockReturnValue(undefined);
+export const getCookie = jest.fn().mockReturnValue("sessionId");

@@ -51,3 +51,11 @@ export const lucia = {
 	}),
 	sessionCookieName: "cookieName",
 };
+
+export const r2 = {
+	get: jest.fn().mockResolvedValue({
+		text: jest.fn().mockResolvedValue("content"),
+	}),
+	put: jest.fn().mockResolvedValue({}),
+	delete: jest.fn().mockResolvedValue({}),
+};

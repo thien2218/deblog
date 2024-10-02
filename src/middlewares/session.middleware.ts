@@ -1,10 +1,16 @@
 import { AppEnv } from "@/context";
 import { initializeLucia } from "@/utils";
+import { drizzle } from "drizzle-orm/d1";
+import { MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
-import { createMiddleware } from "hono/factory";
 
-const session = createMiddleware<AppEnv>(async (c, next) => {
-	const lucia = initializeLucia(c.env.DB);
+const session: MiddlewareHandler<AppEnv> = async (c, next) => {
+	const db = drizzle(c.env.DB);
+	const lucia = initializeLucia(db);
+
+	c.set("db", db);
+	c.set("lucia", lucia);
+
 	const sessionId = getCookie(c, lucia.sessionCookieName);
 
 	if (!sessionId) {
@@ -29,7 +35,8 @@ const session = createMiddleware<AppEnv>(async (c, next) => {
 
 	c.set("user", user);
 	c.set("session", session);
+
 	return next();
-});
+};
 
 export default session;

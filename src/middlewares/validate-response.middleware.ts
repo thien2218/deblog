@@ -5,6 +5,7 @@ import { jsonRegex } from "./valibot.middleware";
 
 const validateResponse: MiddlewareHandler = async (c, next) => {
 	await next();
+
 	const contentType = c.res.headers.get("Content-Type");
 
 	if (contentType && jsonRegex.test(contentType)) {

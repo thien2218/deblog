@@ -1,22 +1,20 @@
 import { AppEnv } from "@/context";
 import { Hono } from "hono";
 import { LoginSchema, SignupSchema } from "@/schemas";
-import { drizzle } from "drizzle-orm/d1";
 import { usersTable } from "@/database/tables";
 import { compare, hash } from "bcryptjs";
-import { handleDbError, initializeLucia } from "@/utils";
+import { handleDbError } from "@/utils";
 import { nanoid } from "nanoid";
-import { unauth, valibot } from "@/middlewares";
+import { auth, unauth, valibot } from "@/middlewares";
 import { eq, or, sql } from "drizzle-orm";
-import { Session } from "lucia";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
 // Signup a new user
 authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const { password, ...rest } = c.req.valid("json");
-	const db = drizzle(c.env.DB);
-	const lucia = initializeLucia(c.env.DB);
+	const db = c.get("db");
+	const lucia = c.get("lucia");
 	const encryptedPassword = await hash(password, 11);
 	const userId = nanoid(25);
 
@@ -47,8 +45,8 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 // Login a user
 authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
-	const db = drizzle(c.env.DB);
-	const lucia = initializeLucia(c.env.DB);
+	const db = c.get("db");
+	const lucia = c.get("lucia");
 
 	const query = db
 		.select({
@@ -86,9 +84,10 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 });
 
 // Logout a user
-authRoutes.post("/logout", async (c) => {
-	const session = c.get("session") as Session;
-	const lucia = initializeLucia(c.env.DB);
+authRoutes.post("/logout", auth, async (c) => {
+	const session = c.get("session");
+	const lucia = c.get("lucia");
+
 	await lucia.invalidateSession(session.id);
 
 	c.header("Set-Cookie", lucia.createBlankSessionCookie().serialize(), {
@@ -97,6 +96,20 @@ authRoutes.post("/logout", async (c) => {
 	c.header("Location", "/login", { append: true });
 
 	return c.text("User successfully logged out");
+});
+
+// Get the current user's profile
+authRoutes.get("/me", auth, async (c) => {
+	const user = c.get("user");
+
+	return c.json(
+		{
+			state: "success",
+			message: "User profile fetched successfully",
+			output: user,
+		},
+		200
+	);
 });
 
 export default authRoutes;

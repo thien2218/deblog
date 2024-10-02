@@ -14,7 +14,6 @@ import { and, desc, eq, exists, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/d1";
 import { Hono, MiddlewareHandler } from "hono";
 import { User } from "lucia";
-import { nanoid } from "nanoid";
 import { parse } from "valibot";
 
 const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
@@ -36,7 +35,7 @@ const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
 
 const userRoutes = new Hono<AppEnv>().basePath("/:username");
 
-userRoutes.use("/drafts/*", isAuthorized);
+userRoutes.use("/drafts/*", auth, isAuthorized);
 userRoutes.put("*", isAuthorized);
 userRoutes.patch("*", isAuthorized);
 userRoutes.delete("*", isAuthorized);
@@ -177,19 +176,14 @@ userRoutes.get(
 	isAuthorized,
 	valibot("query", PageQuerySchema),
 	async (c) => {
-		const { id: userId } = c.get("user") as User;
-		const db = drizzle(c.env.DB);
+		const { id: userId } = c.get("user");
 		const { offset, limit } = c.req.valid("query");
+		const db = drizzle(c.env.DB);
 
 		const query = db
 			.select({ post: postsTable, author: usersTable })
 			.from(savedPostsTable)
-			.where(
-				and(
-					eq(savedPostsTable.userId, sql.placeholder("userId")),
-					eq(postsTable.id, savedPostsTable.postId)
-				)
-			)
+			.where(eq(savedPostsTable.userId, sql.placeholder("userId")))
 			.innerJoin(postsTable, eq(postsTable.id, savedPostsTable.postId))
 			.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 			.orderBy(desc(savedPostsTable.savedAt))
@@ -264,7 +258,7 @@ userRoutes.put(
 		const query = db.select().from(
 			exists(
 				db
-					.select({ n: sql`1` })
+					.select()
 					.from(postsTable)
 					.where(
 						and(
@@ -283,8 +277,8 @@ userRoutes.put(
 			return c.text("No post/draft found with the given id", 404);
 		}
 
+		// Check if the post exists in the bucket
 		try {
-			// Check if the post exists in the bucket
 			await bucket.head(`${authorId}/${id}`);
 		} catch (error) {
 			console.log(error);
@@ -408,35 +402,6 @@ userRoutes.get("/drafts/:id", async (c) => {
 		message: "Draft fetched successfully",
 		output: parse(ReadPostSchema, data),
 	});
-});
-
-// Create and get the draft id
-userRoutes.post("/drafts", async (c) => {
-	const { id: authorId } = c.get("user") as User;
-	const id = nanoid(25);
-	const db = drizzle(c.env.DB);
-	const bucket = c.env.POSTS_BUCKET;
-
-	const query = db
-		.insert(postsTable)
-		.values({
-			id: sql.placeholder("id"),
-			authorId: sql.placeholder("authorId"),
-			title: "Untitled",
-		})
-		.prepare();
-
-	await query.run({ id, authorId }).catch(handleDbError);
-	await bucket.put(`${authorId}/${id}`, "");
-
-	return c.json(
-		{
-			state: "success",
-			message: "Draft created successfully",
-			output: { id },
-		},
-		201
-	);
 });
 
 // Publish a post

@@ -1,5 +1,7 @@
 import { StatusCode } from "hono/utils/http-status";
 
+export const countryCodes = ["VN", "US", "UK"];
+
 export const handleDbError = ({
 	message,
 }: {

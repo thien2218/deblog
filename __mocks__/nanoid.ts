@@ -1,1 +1,1 @@
-export const nanoid = jest.fn(() => "nanoid");
+export const nanoid = jest.fn().mockReturnValue("nanoid");

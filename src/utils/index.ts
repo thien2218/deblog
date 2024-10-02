@@ -1,6 +1,8 @@
 import { Lucia } from "lucia";
-import { D1Adapter } from "@lucia-auth/adapter-sqlite";
 import { HTTPException } from "hono/http-exception";
+import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
+import { DrizzleD1Database } from "drizzle-orm/d1";
+import { sessionsTable, usersTable } from "@/database/tables";
 
 export { default as countryCodes } from "./country-codes";
 
@@ -32,11 +34,8 @@ export const handleDbError = ({ message }: { message: string }) => {
 	});
 };
 
-export function initializeLucia(d1: D1Database) {
-	const adapter = new D1Adapter(d1, {
-		user: "users",
-		session: "sessions",
-	});
+export function initializeLucia(db: DrizzleD1Database) {
+	const adapter = new DrizzleSQLiteAdapter(db, sessionsTable, usersTable);
 
 	return new Lucia(adapter, {
 		sessionCookie: {
@@ -44,14 +43,12 @@ export function initializeLucia(d1: D1Database) {
 				secure: process.env.NODE_ENV === "production",
 			},
 		},
-		getUserAttributes: (attr) => {
-			return {
-				id: attr.id,
-				username: attr.username,
-				email: attr.email,
-				profileImage: attr.profileImage,
-			};
-		},
+		getUserAttributes: (attr) => ({
+			email: attr.email,
+			username: attr.username,
+			name: attr.name,
+			profileImage: attr.profileImage,
+		}),
 	});
 }
 
@@ -59,9 +56,9 @@ declare module "lucia" {
 	interface Register {
 		Lucia: ReturnType<typeof initializeLucia>;
 		DatabaseUserAttributes: {
-			id: string;
-			username: string;
 			email: string;
+			username: string;
+			name: string;
 			profileImage: string;
 		};
 	}

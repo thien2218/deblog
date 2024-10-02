@@ -10,8 +10,6 @@ const app = new Hono<AppEnv>().basePath("/api");
 app.use(csrf({ origin: "http://localhost:8787" }));
 app.use(session);
 app.use(validateResponse);
-// Excludes all login and signup routes from the auth middleware
-app.post("^(?!.*(login|signup)).*", auth);
 app.put("*", auth);
 app.patch("*", auth);
 app.delete("*", auth);
