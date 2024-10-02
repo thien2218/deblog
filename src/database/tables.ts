@@ -30,15 +30,15 @@ export const sessionsTable = sqliteTable("sessions", {
 	id: text("id").primaryKey(),
 	userId: text("user_id")
 		.notNull()
-		.references(() => usersTable.id),
+		.references(() => usersTable.id, { onDelete: "cascade" }),
 	expiresAt: integer("expires_at").notNull(),
 });
 
 export const postsTable = sqliteTable("posts", {
 	id: text("id").primaryKey(),
-	authorId: text("author_id")
-		.notNull()
-		.references(() => usersTable.id),
+	authorId: text("author_id").references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
 	title: text("title").notNull().unique(),
 	description: text("description"),
 	published: integer("published", { mode: "boolean" })
@@ -57,14 +57,13 @@ export const savedPostsTable = sqliteTable(
 	{
 		userId: text("user_id")
 			.notNull()
-			.references(() => usersTable.id),
+			.references(() => usersTable.id, { onDelete: "cascade" }),
 		postId: text("post_id")
 			.notNull()
-			.references(() => postsTable.id),
+			.references(() => postsTable.id, { onDelete: "cascade" }),
 		savedAt: integer("saved_at", { mode: "timestamp" })
 			.notNull()
 			.default(sql`(unixepoch())`),
-		isDeleted: integer("is_deleted", { mode: "boolean" }).default(false),
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.userId, table.postId] }),

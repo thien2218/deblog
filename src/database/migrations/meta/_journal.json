@@ -50,6 +50,13 @@
       "when": 1727830161666,
       "tag": "0006_wealthy_scarecrow",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1727858058844,
+      "tag": "0007_red_pandemic",
+      "breakpoints": true
     }
   ]
 }
