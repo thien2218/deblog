@@ -7,15 +7,26 @@ import { sessionsTable, usersTable } from "@/database/tables";
 export { default as countryCodes } from "./country-codes";
 
 export const handleDbError = ({ message }: { message: string }) => {
-	if (message.includes("UNIQUE")) {
-		const field = message.split(".")[1].split(": ")[0];
+	console.log(message);
+
+	if (message.includes("SQLITE_CONSTRAINT")) {
+		let msg: string;
+		let error;
+
+		if (message.includes("UNIQUE")) {
+			const field = message.split(".")[1].split(": ")[0];
+			msg = `This ${field} has already been taken`;
+			error = { field, code: "UNIQUE_CONSTRAINT_ERROR" };
+		} else {
+			msg = message.split(": ")[1];
+		}
 
 		throw new HTTPException(400, {
 			res: new Response(
 				JSON.stringify({
 					state: "error",
-					message: `This ${field} already been taken`,
-					error: { field, code: "UNIQUE_CONSTRAINT_ERROR" },
+					message: msg,
+					error,
 				}),
 				{ headers: { "Content-Type": "application/json" } }
 			),

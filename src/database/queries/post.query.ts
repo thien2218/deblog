@@ -121,6 +121,7 @@ export const readPost = async (
 				...authorSchema,
 				role: usersTable.role,
 				country: usersTable.country,
+				website: usersTable.website,
 			},
 		})
 		.from(postsTable)

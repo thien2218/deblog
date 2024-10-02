@@ -7,6 +7,7 @@ import {
 	transform,
 	string,
 	InferOutput,
+	optional,
 } from "valibot";
 
 export const PageQuerySchema = pipe(
@@ -21,7 +22,7 @@ export const PageQuerySchema = pipe(
 			minValue(1, "Page's value must be at least 1")
 		),
 		limit: pipe(
-			string(),
+			optional(string(), "20"),
 			check(
 				(l) => Number.isInteger(parseFloat(l)),
 				"Limit must be an integer"
