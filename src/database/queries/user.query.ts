@@ -1,6 +1,12 @@
 import { handleDbError } from "@/utils";
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { commentsTable, postsTable, reportsTable, usersTable } from "../tables";
+import {
+	commentsTable,
+	postsTable,
+	reportsTable,
+	subscriptionsTable,
+	usersTable,
+} from "../tables";
 import { eq, sql } from "drizzle-orm";
 import { SendReport, UpdateProfile } from "@/schemas/user.schema";
 
@@ -73,4 +79,25 @@ export const sendReportFromUser = async (
 		.prepare();
 
 	return query.execute({ userId, ...payload }).catch(handleDbError);
+};
+
+export const subscribeToUser = async (
+	db: DrizzleD1Database,
+	userId: string,
+	username: string
+) => {
+	const selectQuery = db
+		.select({ id: usersTable.id })
+		.from(usersTable)
+		.where(eq(usersTable.username, sql.placeholder("username")));
+
+	const insertQuery = db
+		.insert(subscriptionsTable)
+		.values({
+			subscriber: sql.placeholder("userId"),
+			subscribeTo: sql`${selectQuery}`,
+		})
+		.prepare();
+
+	return insertQuery.execute({ userId, username }).catch(handleDbError);
 };

@@ -88,10 +88,10 @@ export const commentsTable = sqliteTable("comments", {
 export const reportsTable = sqliteTable(
 	"reports",
 	{
-		reporter: text("reporter_id")
+		reporter: text("reporter")
 			.notNull()
 			.references(() => usersTable.id, { onDelete: "cascade" }),
-		reported: text("reported_id").notNull(),
+		reported: text("reported").notNull(),
 		resourceType: text("resource_type").notNull(),
 		reason: text("reason").notNull(),
 		description: text("description"),
@@ -101,5 +101,23 @@ export const reportsTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.reporter, table.reported] }),
+	})
+);
+
+export const subscriptionsTable = sqliteTable(
+	"subscriptions",
+	{
+		subscriber: text("subscriber")
+			.notNull()
+			.references(() => usersTable.id, { onDelete: "cascade" }),
+		subscribeTo: text("subscribe_to")
+			.notNull()
+			.references(() => usersTable.id, { onDelete: "cascade" }),
+		subscribedSince: integer("subscribed_since", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.subscriber, table.subscribeTo] }),
 	})
 );

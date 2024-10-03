@@ -6,6 +6,7 @@ import {
 	updateProfile,
 	checkResourceExists,
 	sendReportFromUser,
+	subscribeToUser,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
@@ -124,5 +125,19 @@ userRoutes.post(
 		return c.text("Report sent successfully");
 	}
 );
+
+// Subscribe to another user
+userRoutes.post("/:username/subscribe", auth, async (c) => {
+	const user = c.get("user");
+	const username = c.req.param("username");
+
+	if (username === user.username) {
+		return c.text("You can't subscribe to yourself", 400);
+	}
+
+	await subscribeToUser(c.get("db"), user.id, username);
+
+	return c.text("User subscribed successfully");
+});
 
 export default userRoutes;
