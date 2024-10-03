@@ -1,6 +1,6 @@
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { postsTable, savedPostsTable, usersTable } from "../tables";
-import { and, desc, eq, exists, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 import { PageQuery, UpdatePostMetadata } from "@/schemas";
 
@@ -163,21 +163,14 @@ export const findExistsPost = async (
 	id: string,
 	authorId: string
 ) => {
-	const query = db.select().from(
-		exists(
-			db
-				.select()
-				.from(postsTable)
-				.where(
-					and(
-						eq(postsTable.id, sql.placeholder("id")),
-						eq(postsTable.authorId, sql.placeholder("authorId"))
-					)
-				)
-		)
-	);
+	const query = db
+		.select()
+		.from(postsTable)
+		.where(and(eq(postsTable.id, id), eq(postsTable.authorId, authorId)));
 
-	return Boolean(await query.get({ id, authorId }).catch(handleDbError));
+	return await db
+		.get<{ exists: boolean }>(sql`select exists${query} as 'exists'`)
+		.catch(handleDbError);
 };
 
 export const deletePost = async (

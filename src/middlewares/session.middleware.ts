@@ -5,7 +5,7 @@ import { MiddlewareHandler } from "hono";
 import { getCookie } from "hono/cookie";
 
 const session: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const db = drizzle(c.env.DB);
+	const db = drizzle(c.env.DB, { logger: true });
 	const lucia = initializeLucia(db);
 
 	c.set("db", db);

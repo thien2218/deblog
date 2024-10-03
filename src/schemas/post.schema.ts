@@ -8,6 +8,7 @@ import {
 	optional,
 	pipe,
 	string,
+	trim,
 } from "valibot";
 
 export const UpdatePostMetadataSchema = pipe(
@@ -33,13 +34,12 @@ export const UpdatePostMetadataSchema = pipe(
 	)
 );
 
-export const UpdatePostContentSchema = object({
-	content: pipe(
-		string(),
-		nonEmpty("Blog content cannot be empty"),
-		maxLength(60 * 1024, "Blog content cannot be too long")
-	),
-});
+export const UpdatePostContentSchema = pipe(
+	string(),
+	trim(),
+	nonEmpty("Blog content cannot be empty"),
+	maxLength(60 * 1024, "Blog content cannot be too long")
+);
 
 export type UpdatePostMetadata = InferOutput<typeof UpdatePostMetadataSchema>;
 export type UpdatePostContent = InferOutput<typeof UpdatePostContentSchema>;
