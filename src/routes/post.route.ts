@@ -2,13 +2,13 @@ import { AppEnv } from "@/context";
 import {
 	deletePost,
 	insertDraft,
-	publishPost,
+	publishDraft,
 	savePost,
-	selectDraftFromAuthor,
-	selectDraftsFromUser,
-	selectExistsPost,
-	selectPosts,
-	selectSavedPostsFromUser,
+	readDraftFromUser,
+	findDraftsFromUser,
+	findExistsPost,
+	findPosts,
+	findSavedPostsFromUser,
 	updatePostMetadata,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
@@ -29,7 +29,7 @@ postRoutes.use("/drafts/*", auth);
 postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
 	const pageQuery = c.req.valid("query");
 
-	const data = await selectPosts(c.get("db"), pageQuery);
+	const data = await findPosts(c.get("db"), pageQuery);
 
 	if (!data.length) {
 		return c.json({ message: "No blog posts found", state: "success" }, 404);
@@ -56,36 +56,24 @@ postRoutes.post("/:id/save", auth, async (c) => {
 });
 
 // Get saved posts of a user
-postRoutes.get(
-	"/posts/saved",
-	auth,
-	valibot("query", PageQuerySchema),
-	async (c) => {
-		const { id: userId, email, ...author } = c.get("user");
-		const pageQuery = c.req.valid("query");
+postRoutes.get("/saved", auth, valibot("query", PageQuerySchema), async (c) => {
+	const { id: userId, email, ...author } = c.get("user");
+	const pageQuery = c.req.valid("query");
 
-		const posts = await selectSavedPostsFromUser(
-			c.get("db"),
-			userId,
-			pageQuery
-		);
+	const posts = await findSavedPostsFromUser(c.get("db"), userId, pageQuery);
 
-		if (!posts.length) {
-			return c.json(
-				{ state: "success", message: "No saved posts found" },
-				404
-			);
-		}
-
-		return c.json({
-			state: "success",
-			message: "Saved posts fetched successfully",
-			output: posts.map((post) => ({ post, author })),
-		});
+	if (!posts.length) {
+		return c.json({ state: "success", message: "No saved posts found" }, 404);
 	}
-);
 
-// Update a post/draft metadata
+	return c.json({
+		state: "success",
+		message: "Saved posts fetched successfully",
+		output: posts.map((post) => ({ post, author })),
+	});
+});
+
+// Update a post metadata
 postRoutes.put(
 	"/:id/metadata",
 	valibot("json", UpdatePostMetadataSchema),
@@ -102,10 +90,7 @@ postRoutes.put(
 		);
 
 		if (!meta.rows_written) {
-			return c.text(
-				"No post/draft from this author with the given post id",
-				404
-			);
+			return c.text("No post from this author with the given post id", 404);
 		}
 
 		return c.text("Blog post updated successfully");
@@ -122,7 +107,7 @@ postRoutes.put(
 		const { content } = c.req.valid("json");
 		const bucket = c.env.POSTS_BUCKET;
 
-		const existsInDB = await selectExistsPost(c.get("db"), id, authorId);
+		const existsInDB = await findExistsPost(c.get("db"), id, authorId);
 
 		if (!existsInDB) {
 			return c.text("No post/draft found with the given id", 404);
@@ -142,7 +127,7 @@ postRoutes.put(
 	}
 );
 
-// Delete a post/draft
+// Delete a post
 postRoutes.delete("/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
@@ -152,7 +137,7 @@ postRoutes.delete("/:id", async (c) => {
 
 	if (!data) {
 		return c.text(
-			"No post/draft found from this author with the given post id",
+			"No post found from this author with the given post id",
 			404
 		);
 	}
@@ -164,12 +149,12 @@ postRoutes.delete("/:id", async (c) => {
 	return c.text(`${type} deleted successfully`);
 });
 
-// Get many drafts of a user
+// Get drafts of a user
 postRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
 	const { id: authorId, email, ...author } = c.get("user") as User;
 	const pageQuery = c.req.valid("query");
 
-	const posts = await selectDraftsFromUser(c.get("db"), authorId, pageQuery);
+	const posts = await findDraftsFromUser(c.get("db"), authorId, pageQuery);
 
 	if (!posts.length) {
 		return c.json({ state: "success", message: "No drafts found" }, 404);
@@ -182,7 +167,7 @@ postRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
 	});
 });
 
-// Create a draft and get its id
+// Create a draft
 postRoutes.post("/drafts", async (c) => {
 	const id = nanoid(25);
 	const { id: authorId } = c.get("user") as User;
@@ -207,7 +192,7 @@ postRoutes.get("/drafts/:id", async (c) => {
 	const id = c.req.param("id");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const post = await selectDraftFromAuthor(c.get("db"), id, authorId);
+	const post = await readDraftFromUser(c.get("db"), id, authorId);
 
 	if (!post) {
 		return c.json({ state: "success", message: "Draft not found" }, 404);
@@ -216,7 +201,7 @@ postRoutes.get("/drafts/:id", async (c) => {
 	const obj = await bucket.get(`${authorId}/${id}`);
 
 	if (!obj) {
-		return c.text("No draft found in the bucket", 404);
+		return c.json({ state: "success", message: "Draft not found" }, 404);
 	}
 
 	const content = await obj.text();
@@ -246,7 +231,7 @@ postRoutes.post("/drafts/:id/publish", async (c) => {
 		return c.text("Post content is too short to be published", 400);
 	}
 
-	const { meta } = await publishPost(c.get("db"), id, authorId);
+	const { meta } = await publishDraft(c.get("db"), id, authorId);
 
 	if (!meta.rows_written) {
 		return c.text("No draft found with the given id", 404);

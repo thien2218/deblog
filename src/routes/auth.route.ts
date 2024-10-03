@@ -4,7 +4,7 @@ import { LoginSchema, SignupSchema } from "@/schemas";
 import { compare, hash } from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auth, unauth, valibot } from "@/middlewares";
-import { insertUser, selectLoginUser } from "@/database/queries";
+import { insertUser, findLoginUser } from "@/database/queries";
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
@@ -31,7 +31,7 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 	const { identifier, password } = c.req.valid("json");
 	const lucia = c.get("lucia");
 
-	const user = await selectLoginUser(c.get("db"), identifier);
+	const user = await findLoginUser(c.get("db"), identifier);
 
 	if (!user) {
 		return c.text("Incorrect email/username or password", 400);

@@ -26,7 +26,7 @@ export const insertUser = async (db: DrizzleD1Database, payload: Signup) => {
 	return query.execute(payload).catch(handleDbError);
 };
 
-export const selectLoginUser = async (
+export const findLoginUser = async (
 	db: DrizzleD1Database,
 	identifier: string
 ) => {

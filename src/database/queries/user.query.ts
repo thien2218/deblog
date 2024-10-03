@@ -4,10 +4,7 @@ import { usersTable } from "../tables";
 import { eq, sql } from "drizzle-orm";
 import { UpdateProfile } from "@/schemas/user.schema";
 
-export const selectProfile = async (
-	db: DrizzleD1Database,
-	username: string
-) => {
+export const findProfile = async (db: DrizzleD1Database, username: string) => {
 	const query = db
 		.select({
 			username: usersTable.username,

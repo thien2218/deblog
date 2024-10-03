@@ -18,7 +18,7 @@ const authorSchema = {
 	profileImage: usersTable.profileImage,
 };
 
-export const selectPosts = async (
+export const findPosts = async (
 	db: DrizzleD1Database,
 	pageQuery: PageQuery
 ) => {
@@ -34,7 +34,7 @@ export const selectPosts = async (
 	return query.all(pageQuery).catch(handleDbError);
 };
 
-export const selectPostsFromAuthor = async (
+export const findPostsFromAuthor = async (
 	db: DrizzleD1Database,
 	username: string,
 	pageQuery: PageQuery
@@ -58,7 +58,7 @@ export const selectPostsFromAuthor = async (
 	return query.all({ username, ...pageQuery }).catch(handleDbError);
 };
 
-export const selectSavedPostsFromUser = async (
+export const findSavedPostsFromUser = async (
 	db: DrizzleD1Database,
 	userId: string,
 	pageQuery: PageQuery
@@ -109,7 +109,7 @@ export const savePost = async (
 	return query.execute({ postId, userId }).catch(handleDbError);
 };
 
-export const readPost = async (
+export const readPostFromAuthor = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string
@@ -158,7 +158,7 @@ export const updatePostMetadata = async (
 	return query.run({ id, authorId }).catch(handleDbError);
 };
 
-export const selectExistsPost = async (
+export const findExistsPost = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string
@@ -199,7 +199,7 @@ export const deletePost = async (
 	return query.get({ id, authorId }).catch(handleDbError);
 };
 
-export const selectDraftsFromUser = async (
+export const findDraftsFromUser = async (
 	db: DrizzleD1Database,
 	authorId: string,
 	pageQuery: PageQuery
@@ -221,7 +221,7 @@ export const selectDraftsFromUser = async (
 	return query.all({ authorId, ...pageQuery }).catch(handleDbError);
 };
 
-export const selectDraftFromAuthor = async (
+export const readDraftFromUser = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string
@@ -241,7 +241,7 @@ export const selectDraftFromAuthor = async (
 	return query.get({ id, authorId }).catch(handleDbError);
 };
 
-export const publishPost = async (
+export const publishDraft = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string

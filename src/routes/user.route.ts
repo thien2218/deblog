@@ -1,40 +1,23 @@
 import { AppEnv } from "@/context";
 import {
-	readPost,
-	selectPostsFromAuthor,
-	selectProfile,
+	readPostFromAuthor,
+	findPostsFromAuthor,
+	findProfile,
 	updateProfile,
 } from "@/database/queries";
 import { valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
 import { UpdateProfileSchema } from "@/schemas/user.schema";
-import { Hono, MiddlewareHandler } from "hono";
+import { Hono } from "hono";
 import { User } from "lucia";
 
-const isAuthorized: MiddlewareHandler<AppEnv> = async (c, next) => {
-	const username = c.req.param("username");
-	const authUser = c.get("user");
-
-	if (username !== authUser?.username) {
-		return c.json(
-			{
-				state: "error",
-				message: "You are not authorized to perform this action",
-			},
-			403
-		);
-	}
-
-	return next();
-};
-
-const userRoutes = new Hono<AppEnv>().basePath("/:username");
+const userRoutes = new Hono<AppEnv>();
 
 // Get the user's profile
-userRoutes.get("/profile", async (c) => {
+userRoutes.get("/:username/profile", async (c) => {
 	const username = c.req.param("username");
 
-	const profile = await selectProfile(c.get("db"), username);
+	const profile = await findProfile(c.get("db"), username);
 
 	if (!profile) {
 		return c.json({ state: "success", message: "User not found" }, 404);
@@ -47,50 +30,35 @@ userRoutes.get("/profile", async (c) => {
 	});
 });
 
-// Update user profile
-userRoutes.patch(
-	"/profile",
-	isAuthorized,
-	valibot("json", UpdateProfileSchema),
+// Get the user's posts
+userRoutes.get(
+	"/:username/posts",
+	valibot("query", PageQuerySchema),
 	async (c) => {
-		const { id: userId } = c.get("user") as User;
-		const payload = c.req.valid("json");
+		const username = c.req.param("username");
+		const pageQuery = c.req.valid("query");
 
-		const { meta } = await updateProfile(c.get("db"), userId, payload);
+		const data = await findPostsFromAuthor(c.get("db"), username, pageQuery);
 
-		if (!meta.rows_written) {
-			return c.text("User not found", 404);
+		if (!data.length) {
+			return c.json({ state: "success", message: "No posts found" }, 404);
 		}
 
-		return c.text("User profile updated successfully");
+		return c.json({
+			state: "success",
+			message: "Posts fetched successfully",
+			output: data,
+		});
 	}
 );
 
-// Get the user's posts
-userRoutes.get("/posts", valibot("query", PageQuerySchema), async (c) => {
-	const username = c.req.param("username");
-	const pageQuery = c.req.valid("query");
-
-	const data = await selectPostsFromAuthor(c.get("db"), username, pageQuery);
-
-	if (!data.length) {
-		return c.json({ state: "success", message: "No posts found" }, 404);
-	}
-
-	return c.json({
-		state: "success",
-		message: "Posts fetched successfully",
-		output: data,
-	});
-});
-
 // Read post from an author
-userRoutes.get("/posts/:id", async (c) => {
+userRoutes.get("/:username/posts/:id", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const id = c.req.param("id");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const data = await readPost(c.get("db"), id, authorId);
+	const data = await readPostFromAuthor(c.get("db"), id, authorId);
 
 	if (!data) {
 		return c.json({ state: "success", message: "Post not found" }, 404);
@@ -110,5 +78,23 @@ userRoutes.get("/posts/:id", async (c) => {
 		output: { ...data, content },
 	});
 });
+
+// Update user profile
+userRoutes.patch(
+	"/profile",
+	valibot("json", UpdateProfileSchema),
+	async (c) => {
+		const { id: userId } = c.get("user") as User;
+		const payload = c.req.valid("json");
+
+		const { meta } = await updateProfile(c.get("db"), userId, payload);
+
+		if (!meta.rows_written) {
+			return c.text("User not found", 404);
+		}
+
+		return c.text("User profile updated successfully");
+	}
+);
 
 export default userRoutes;
