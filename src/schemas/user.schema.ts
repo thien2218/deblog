@@ -1,6 +1,7 @@
 import { countryCodes } from "@/utils";
 import {
 	check,
+	forward,
 	InferOutput,
 	length,
 	maxLength,
@@ -50,21 +51,65 @@ export const UpdateProfileSchema = pipe(
 	check((v) => Object.keys(v).length > 0, "No fields to update")
 );
 
-export const SendReportSchema = object({
-	reason: picklist(
-		["spam", "inappropriate", "other"],
-		"Invalid report reason"
-	),
-	resourceType: picklist(["post", "user", "comment"], "Invalid report type"),
-	reported: pipe(string(), length(25), nanoid("Invalid reported resource ID")),
-	description: optional(
-		pipe(
+const reasons = {
+	post: [
+		"spam",
+		"inappropriate",
+		"misinformation",
+		"plagiarism",
+		"violence",
+		"hate speech",
+		"illegal content",
+		"other",
+	],
+	user: [
+		"spam",
+		"pornography",
+		"harassment",
+		"impersonation",
+		"scam",
+		"fake account",
+		"other",
+	],
+	comment: [
+		"spam",
+		"personal attack",
+		"hate speech",
+		"harassment",
+		"threats",
+		"abusive language",
+		"other",
+	],
+};
+
+export const SendReportSchema = pipe(
+	object({
+		reason: string(),
+		resourceType: picklist(
+			["post", "user", "comment"],
+			"Invalid report type"
+		),
+		reported: pipe(
 			string(),
-			minLength(3, "Description must be at least 3 characters long"),
-			maxLength(250, "Description must be at most 250 characters long")
-		)
-	),
-});
+			length(25, "Invalid reported resource ID"),
+			nanoid("Invalid reported resource ID")
+		),
+		description: optional(
+			pipe(
+				string(),
+				minLength(3, "Description must be at least 3 characters long"),
+				maxLength(250, "Description must be at most 250 characters long")
+			)
+		),
+	}),
+	forward(
+		check(
+			({ reason, resourceType }) => reasons[resourceType].includes(reason),
+			"Invalid report reason"
+		),
+		["reason"]
+	)
+);
 
 export type UpdateProfile = InferOutput<typeof UpdateProfileSchema>;
 export type SendReport = InferOutput<typeof SendReportSchema>;

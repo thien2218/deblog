@@ -4,21 +4,23 @@ import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { sessionsTable, usersTable } from "@/database/tables";
 
-export { default as countryCodes } from "./country-codes";
+type SQLError = { fields?: string[]; code: string };
 
 export const handleDbError = ({ message }: { message: string }) => {
 	console.log(message);
 
 	if (message.includes("SQLITE_CONSTRAINT")) {
-		let msg: string;
-		let error;
+		const chunks = message.split(": ");
+		const msg = chunks[1];
+		const error: SQLError = { code: chunks[chunks.length - 1] };
 
 		if (message.includes("UNIQUE")) {
-			const field = message.split(".")[1].split(": ")[0];
-			msg = `This ${field} has already been taken`;
-			error = { field, code: "UNIQUE_CONSTRAINT_ERROR" };
-		} else {
-			msg = message.split(": ")[1];
+			const fields = message
+				.split(": ")[2]
+				.split(", ")
+				.map((f) => f.split(".")[1]);
+
+			error.fields = fields;
 		}
 
 		throw new HTTPException(400, {
@@ -74,3 +76,5 @@ declare module "lucia" {
 		};
 	}
 }
+
+export { default as countryCodes } from "./country-codes";
