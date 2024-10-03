@@ -4,10 +4,12 @@ import {
 	findPostsFromAuthor,
 	findProfile,
 	updateProfile,
+	checkResourceExists,
+	sendReportFromUser,
 } from "@/database/queries";
-import { valibot } from "@/middlewares";
+import { auth, valibot } from "@/middlewares";
 import { PageQuerySchema } from "@/schemas";
-import { UpdateProfileSchema } from "@/schemas/user.schema";
+import { SendReportSchema, UpdateProfileSchema } from "@/schemas/user.schema";
 import { Hono } from "hono";
 import { User } from "lucia";
 
@@ -54,17 +56,17 @@ userRoutes.get(
 
 // Read post from an author
 userRoutes.get("/:username/posts/:id", async (c) => {
-	const { id: authorId } = c.get("user") as User;
+	const username = c.req.param("username");
 	const id = c.req.param("id");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const data = await readPostFromAuthor(c.get("db"), id, authorId);
+	const data = await readPostFromAuthor(c.get("db"), id, username);
 
 	if (!data) {
 		return c.json({ state: "success", message: "Post not found" }, 404);
 	}
 
-	const obj = await bucket.get(`${authorId}/${id}`);
+	const obj = await bucket.get(`${data.author.id}/${id}`);
 
 	if (!obj) {
 		return c.text("No post found in the bucket", 404);
@@ -94,6 +96,32 @@ userRoutes.patch(
 		}
 
 		return c.text("User profile updated successfully");
+	}
+);
+
+// Report resource violation
+userRoutes.post(
+	"/report",
+	auth,
+	valibot("json", SendReportSchema),
+	async (c) => {
+		const { id } = c.get("user");
+		const payload = c.req.valid("json");
+		const db = c.get("db");
+
+		const { exists } = await checkResourceExists(
+			db,
+			payload.resourceType,
+			payload.reported
+		);
+
+		if (!exists) {
+			return c.text("Reported resource not found", 404);
+		}
+
+		await sendReportFromUser(db, id, payload);
+
+		return c.text("Report sent successfully");
 	}
 );
 

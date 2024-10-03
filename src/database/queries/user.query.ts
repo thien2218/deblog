@@ -1,8 +1,8 @@
 import { handleDbError } from "@/utils";
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { usersTable } from "../tables";
+import { commentsTable, postsTable, reportsTable, usersTable } from "../tables";
 import { eq, sql } from "drizzle-orm";
-import { UpdateProfile } from "@/schemas/user.schema";
+import { SendReport, UpdateProfile } from "@/schemas/user.schema";
 
 export const findProfile = async (db: DrizzleD1Database, username: string) => {
 	const query = db
@@ -35,4 +35,42 @@ export const updateProfile = async (
 		.prepare();
 
 	return query.run({ userId }).catch(handleDbError);
+};
+
+export const checkResourceExists = async (
+	db: DrizzleD1Database,
+	resourceType: SendReport["resourceType"],
+	id: string
+) => {
+	const tables = {
+		post: postsTable,
+		user: usersTable,
+		comment: commentsTable,
+	};
+	const table = tables[resourceType];
+
+	const query = db.select().from(table).where(eq(table.id, id));
+
+	return await db
+		.get<{ exists: boolean }>(sql`select exists${query} as 'exists'`)
+		.catch(handleDbError);
+};
+
+export const sendReportFromUser = async (
+	db: DrizzleD1Database,
+	userId: string,
+	payload: SendReport
+) => {
+	const query = db
+		.insert(reportsTable)
+		.values({
+			reporter: sql.placeholder("userId"),
+			reported: sql.placeholder("reportedId"),
+			resourceType: sql.placeholder("resourceType"),
+			reason: sql.placeholder("reason"),
+			description: sql.placeholder("description"),
+		})
+		.prepare();
+
+	return query.execute({ userId, ...payload }).catch(handleDbError);
 };

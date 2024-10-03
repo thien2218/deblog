@@ -2,9 +2,12 @@ import { countryCodes } from "@/utils";
 import {
 	check,
 	InferOutput,
+	length,
 	maxLength,
 	minLength,
+	nanoid,
 	object,
+	optional,
 	partial,
 	picklist,
 	pipe,
@@ -47,4 +50,21 @@ export const UpdateProfileSchema = pipe(
 	check((v) => Object.keys(v).length > 0, "No fields to update")
 );
 
+export const SendReportSchema = object({
+	reason: picklist(
+		["spam", "inappropriate", "other"],
+		"Invalid report reason"
+	),
+	resourceType: picklist(["post", "user", "comment"], "Invalid report type"),
+	reported: pipe(string(), length(25), nanoid("Invalid reported resource ID")),
+	description: optional(
+		pipe(
+			string(),
+			minLength(3, "Description must be at least 3 characters long"),
+			maxLength(250, "Description must be at most 250 characters long")
+		)
+	),
+});
+
 export type UpdateProfile = InferOutput<typeof UpdateProfileSchema>;
+export type SendReport = InferOutput<typeof SendReportSchema>;

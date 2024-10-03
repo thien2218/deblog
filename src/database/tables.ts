@@ -69,3 +69,37 @@ export const savedPostsTable = sqliteTable(
 		pk: primaryKey({ columns: [table.userId, table.postId] }),
 	})
 );
+
+export const commentsTable = sqliteTable("comments", {
+	id: text("id").primaryKey(),
+	authorId: text("author_id").references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
+	postId: text("post_id").references(() => postsTable.id, {
+		onDelete: "set null",
+	}),
+	content: text("content").notNull(),
+	edited: integer("edited", { mode: "boolean" }).notNull().default(false),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
+
+export const reportsTable = sqliteTable(
+	"reports",
+	{
+		reporter: text("reporter_id")
+			.notNull()
+			.references(() => usersTable.id, { onDelete: "cascade" }),
+		reported: text("reported_id").notNull(),
+		resourceType: text("resource_type").notNull(),
+		reason: text("reason").notNull(),
+		description: text("description"),
+		reportedAt: integer("reported_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.reporter, table.reported] }),
+	})
+);

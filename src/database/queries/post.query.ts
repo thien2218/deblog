@@ -112,13 +112,14 @@ export const savePost = async (
 export const readPostFromAuthor = async (
 	db: DrizzleD1Database,
 	id: string,
-	authorId: string
+	username: string
 ) => {
 	const query = db
 		.select({
 			post: postSchema,
 			author: {
 				...authorSchema,
+				id: usersTable.id,
 				role: usersTable.role,
 				country: usersTable.country,
 				website: usersTable.website,
@@ -128,14 +129,14 @@ export const readPostFromAuthor = async (
 		.where(
 			and(
 				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(usersTable.username, sql.placeholder("username")),
 				eq(postsTable.published, true)
 			)
 		)
 		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.prepare();
 
-	return query.get({ id, authorId }).catch(handleDbError);
+	return query.get({ id, username }).catch(handleDbError);
 };
 
 export const updatePostMetadata = async (
