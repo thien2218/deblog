@@ -12,5 +12,6 @@ export interface AppEnv extends Env {
 	Bindings: {
 		DB: D1Database;
 		POSTS_BUCKET: R2Bucket;
+		IMAGES_BUCKET: R2Bucket;
 	};
 }

@@ -3,6 +3,8 @@ import { any, check, object, optional, picklist, pipe, string } from "valibot";
 export * from "./auth.schema";
 export * from "./query.schema";
 export * from "./post.schema";
+export * from "./user.schema";
+export * from "./comment.schema";
 
 export const JSONResponseSchema = pipe(
 	object({

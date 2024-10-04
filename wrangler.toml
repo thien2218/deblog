@@ -19,5 +19,9 @@ migrations_dir = "./src/database/migrations"
 binding = "POSTS_BUCKET"
 bucket_name = "posts"
 
+[[r2_buckets]]
+binding = "IMAGES_BUCKET"
+bucket_name = "images"
+
 # [ai]
 # binding = "AI"

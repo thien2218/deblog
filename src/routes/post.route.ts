@@ -99,36 +99,34 @@ postRoutes.put(
 );
 
 // Update a post/draft content
-postRoutes.put("/:id/content", async (c) => {
-	const id = c.req.param("id");
-	const { id: authorId } = c.get("user") as User;
-	const bucket = c.env.POSTS_BUCKET;
-	const content = await c.req.text();
+postRoutes.put(
+	"/:id/content",
+	valibot("json", UpdatePostContentSchema),
+	async (c) => {
+		const id = c.req.param("id");
+		const { id: authorId } = c.get("user") as User;
+		const bucket = c.env.POSTS_BUCKET;
+		const { content } = await c.req.valid("json");
 
-	try {
-		parse(UpdatePostContentSchema, content);
-	} catch ({ message }: any) {
-		return c.json({ state: "error", message }, 400);
+		const { exists } = await findExistsPost(c.get("db"), id, authorId);
+
+		if (!exists) {
+			return c.text("No post/draft found with the given id", 404);
+		}
+
+		// Check if the post exists in the bucket
+		try {
+			await bucket.head(`${authorId}/${id}`);
+		} catch (error) {
+			console.log(error);
+			return c.text("No post/draft found in the bucket", 404);
+		}
+
+		await bucket.put(`${authorId}/${id}`, content);
+
+		return c.text("Blog post content updated successfully");
 	}
-
-	const { exists } = await findExistsPost(c.get("db"), id, authorId);
-
-	if (!exists) {
-		return c.text("No post/draft found with the given id", 404);
-	}
-
-	// Check if the post exists in the bucket
-	try {
-		await bucket.head(`${authorId}/${id}`);
-	} catch (error) {
-		console.log(error);
-		return c.text("No post/draft found in the bucket", 404);
-	}
-
-	await bucket.put(`${authorId}/${id}`, content);
-
-	return c.text("Blog post content updated successfully");
-});
+);
 
 // Delete a post
 postRoutes.delete("/:id", async (c) => {

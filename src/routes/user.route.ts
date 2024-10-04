@@ -9,8 +9,11 @@ import {
 	subscribeToUser,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
-import { PageQuerySchema } from "@/schemas";
-import { SendReportSchema, UpdateProfileSchema } from "@/schemas/user.schema";
+import {
+	PageQuerySchema,
+	SendReportSchema,
+	UpdateProfileSchema,
+} from "@/schemas";
 import { Hono } from "hono";
 import { User } from "lucia";
 

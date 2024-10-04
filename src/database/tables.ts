@@ -44,6 +44,7 @@ export const postsTable = sqliteTable("posts", {
 	published: integer("published", { mode: "boolean" })
 		.notNull()
 		.default(false),
+	// coverImage: text("cover_image"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),

@@ -8,7 +8,7 @@ import {
 	usersTable,
 } from "../tables";
 import { eq, sql } from "drizzle-orm";
-import { SendReport, UpdateProfile } from "@/schemas/user.schema";
+import { SendReport, UpdateProfile } from "@/schemas";
 
 export const findProfile = async (db: DrizzleD1Database, username: string) => {
 	const query = db

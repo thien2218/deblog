@@ -1,6 +1,12 @@
 import { Hono } from "hono";
 import { AppEnv } from "./context";
-import { authRoutes, postRoutes, userRoutes } from "./routes";
+import {
+	authRoutes,
+	commentRoutes,
+	postRoutes,
+	uploadRoutes,
+	userRoutes,
+} from "./routes";
 import { csrf } from "hono/csrf";
 import { auth, session, validateResponse } from "./middlewares";
 
@@ -18,5 +24,7 @@ app.delete("*", auth);
 app.route("/", authRoutes);
 app.route("/", postRoutes);
 app.route("/", userRoutes);
+app.route("/", uploadRoutes);
+app.route("/", commentRoutes);
 
 export default app;
