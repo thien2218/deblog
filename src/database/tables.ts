@@ -152,3 +152,22 @@ export const subscriptionsTable = sqliteTable(
 		pk: primaryKey({ columns: [table.subscriber, table.subscribeTo] }),
 	})
 );
+
+export const tagsTable = sqliteTable("tags", {
+	name: text("name").primaryKey(),
+});
+
+export const postTagsTable = sqliteTable(
+	"post_tags",
+	{
+		postId: text("post_id")
+			.notNull()
+			.references(() => postsTable.id, { onDelete: "cascade" }),
+		tagName: text("tag_name")
+			.notNull()
+			.references(() => tagsTable.name, { onDelete: "cascade" }),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.postId, table.tagName] }),
+	})
+);

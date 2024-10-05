@@ -3,7 +3,9 @@ import { AppEnv } from "./context";
 import {
 	authRoutes,
 	commentRoutes,
+	draftRoutes,
 	postRoutes,
+	seriesRoutes,
 	uploadRoutes,
 	userRoutes,
 } from "./routes";
@@ -26,5 +28,7 @@ app.route("/", postRoutes);
 app.route("/", userRoutes);
 app.route("/", uploadRoutes);
 app.route("/", commentRoutes);
+app.route("/", seriesRoutes);
+app.route("/", draftRoutes);
 
 export default app;

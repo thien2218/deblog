@@ -7,6 +7,7 @@ import {
 	checkResourceExists,
 	sendReport,
 	subscribeToUser,
+	findSeries,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
 import {
@@ -141,6 +142,23 @@ userRoutes.post("/:username/subscribe", auth, async (c) => {
 	await subscribeToUser(c.get("db"), user.id, username);
 
 	return c.text("User subscribed successfully");
+});
+
+// Get series of a user
+userRoutes.get("/:username/series", async (c) => {
+	const username = c.req.param("username");
+
+	const series = await findSeries(c.get("db"), username);
+
+	if (!series.length) {
+		return c.json({ state: "success", message: "No series found" }, 404);
+	}
+
+	return c.json({
+		state: "success",
+		message: "Series fetched successfully",
+		output: series,
+	});
 });
 
 export default userRoutes;
