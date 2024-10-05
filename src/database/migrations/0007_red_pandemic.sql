@@ -1,5 +1,4 @@
-ALTER TABLE `sessions`
-   RENAME TO `sessions_old`;
+DROP TABLE IF EXISTS `sessions`;
 --> statement-breakpoint
 CREATE TABLE `sessions` (
    `id` text PRIMARY KEY NOT NULL,
@@ -8,10 +7,7 @@ CREATE TABLE `sessions` (
    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-DROP TABLE `sessions_old`;
--->
-ALTER TABLE `posts`
-   RENAME TO `posts_old`;
+DROP TABLE IF EXISTS `posts`;
 --> statement-breakpoint
 CREATE TABLE `posts` (
    `id` text PRIMARY KEY NOT NULL,
@@ -25,10 +21,7 @@ CREATE TABLE `posts` (
    set null
 );
 --> statement-breakpoint
-DROP TABLE `posts_old`;
---> statement-breakpoint
-ALTER TABLE `saved_posts`
-   RENAME TO `saved_posts_old`;
+DROP TABLE IF EXISTS `saved_posts`;
 --> statement-breakpoint
 CREATE TABLE `saved_posts` (
    `user_id` text NOT NULL,
@@ -38,8 +31,6 @@ CREATE TABLE `saved_posts` (
    FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,
    FOREIGN KEY (`post_id`) REFERENCES `posts`(`id`) ON UPDATE no action ON DELETE cascade
 );
---> statement-breakpoint
-DROP TABLE `saved_posts_old`;
 --> statement-breakpoint
 CREATE TRIGGER IF NOT EXISTS `check_published_post` BEFORE
 INSERT ON `saved_posts` FOR EACH ROW BEGIN

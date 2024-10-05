@@ -16,6 +16,7 @@ const authorSchema = {
 	username: usersTable.username,
 	name: usersTable.name,
 	profileImage: usersTable.profileImage,
+	role: usersTable.role,
 };
 
 export const findPosts = async (
@@ -58,7 +59,7 @@ export const findPostsFromAuthor = async (
 	return query.all({ username, ...pageQuery }).catch(handleDbError);
 };
 
-export const findSavedPostsFromUser = async (
+export const findSavedPosts = async (
 	db: DrizzleD1Database,
 	userId: string,
 	pageQuery: PageQuery
@@ -118,9 +119,9 @@ export const readPostFromAuthor = async (
 		.select({
 			post: postSchema,
 			author: {
-				...authorSchema,
 				id: usersTable.id,
-				role: usersTable.role,
+				...authorSchema,
+				pronoun: usersTable.pronoun,
 				country: usersTable.country,
 				website: usersTable.website,
 			},
@@ -193,7 +194,7 @@ export const deletePost = async (
 	return query.get({ id, authorId }).catch(handleDbError);
 };
 
-export const findDraftsFromUser = async (
+export const findDrafts = async (
 	db: DrizzleD1Database,
 	authorId: string,
 	pageQuery: PageQuery
@@ -215,7 +216,7 @@ export const findDraftsFromUser = async (
 	return query.all({ authorId, ...pageQuery }).catch(handleDbError);
 };
 
-export const readDraftFromUser = async (
+export const readDraft = async (
 	db: DrizzleD1Database,
 	id: string,
 	authorId: string

@@ -1,8 +1,8 @@
 ## Core Features:
 
 -  User can create/update/delete series (episodes of posts)
--  User can update their auth (private) info
 -  User can add tags to their posts
+-  User can update their auth (private) info
 -  User can react to a post/comment
 -  User can reply to comments
 -  User can upload images for their profile and post's thumbnail

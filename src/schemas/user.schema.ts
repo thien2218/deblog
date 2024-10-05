@@ -46,6 +46,10 @@ export const UpdateProfileSchema = pipe(
 				url("Profile image must be a valid URL"),
 				startsWith("https://", "Profile image URL must be secure")
 			),
+			pronoun: picklist(
+				["he/him", "she/her", "they/them"],
+				"Invalid pronoun"
+			),
 		})
 	),
 	check((v) => Object.keys(v).length > 0, "No fields to update")

@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "087869e5-4fa5-44e7-af38-659ec2eed533",
-  "prevId": "3b5ac18f-9a4b-4859-914a-02e827fb50c2",
+  "id": "5a3a3e12-c1fe-4215-b2c5-c16dfebdfab1",
+  "prevId": "e758477a-9d96-42a8-8599-a6e1d2dd24da",
   "tables": {
     "comments": {
       "name": "comments",
@@ -94,6 +94,20 @@
           "notNull": true,
           "autoincrement": false
         },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "series_order": {
+          "name": "series_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "author_id": {
           "name": "author_id",
           "type": "text",
@@ -147,9 +161,30 @@
             "title"
           ],
           "isUnique": true
+        },
+        "series_order_unique": {
+          "name": "series_order_unique",
+          "columns": [
+            "series_id",
+            "series_order"
+          ],
+          "isUnique": true
         }
       },
       "foreignKeys": {
+        "posts_series_id_series_id_fk": {
+          "name": "posts_series_id_series_id_fk",
+          "tableFrom": "posts",
+          "tableTo": "series",
+          "columnsFrom": [
+            "series_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
         "posts_author_id_users_id_fk": {
           "name": "posts_author_id_users_id_fk",
           "tableFrom": "posts",
@@ -170,15 +205,15 @@
     "reports": {
       "name": "reports",
       "columns": {
-        "reporter_id": {
-          "name": "reporter_id",
+        "reporter": {
+          "name": "reporter",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "reported_id": {
-          "name": "reported_id",
+        "reported": {
+          "name": "reported",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
@@ -216,27 +251,27 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "reports_reporter_id_users_id_fk": {
-          "name": "reports_reporter_id_users_id_fk",
+        "reports_reporter_users_id_fk": {
+          "name": "reports_reporter_users_id_fk",
           "tableFrom": "reports",
           "tableTo": "users",
           "columnsFrom": [
-            "reporter_id"
+            "reporter"
           ],
           "columnsTo": [
             "id"
           ],
-          "onDelete": "cascade",
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "reports_reporter_id_reported_id_pk": {
+        "reports_reporter_reported_pk": {
           "columns": [
-            "reporter_id",
-            "reported_id"
+            "reporter",
+            "reported"
           ],
-          "name": "reports_reporter_id_reported_id_pk"
+          "name": "reports_reporter_reported_pk"
         }
       },
       "uniqueConstraints": {}
@@ -307,6 +342,81 @@
       },
       "uniqueConstraints": {}
     },
+    "series": {
+      "name": "series",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "author_id": {
+          "name": "author_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "last_post_added_at": {
+          "name": "last_post_added_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "series_title_unique": {
+          "name": "series_title_unique",
+          "columns": [
+            "title"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "series_author_id_users_id_fk": {
+          "name": "series_author_id_users_id_fk",
+          "tableFrom": "series",
+          "tableTo": "users",
+          "columnsFrom": [
+            "author_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
     "sessions": {
       "name": "sessions",
       "columns": {
@@ -349,6 +459,72 @@
         }
       },
       "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    },
+    "subscriptions": {
+      "name": "subscriptions",
+      "columns": {
+        "subscriber": {
+          "name": "subscriber",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subscribe_to": {
+          "name": "subscribe_to",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "subscribed_since": {
+          "name": "subscribed_since",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "subscriptions_subscriber_users_id_fk": {
+          "name": "subscriptions_subscriber_users_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "subscriber"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "subscriptions_subscribe_to_users_id_fk": {
+          "name": "subscriptions_subscribe_to_users_id_fk",
+          "tableFrom": "subscriptions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "subscribe_to"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "subscriptions_subscriber_subscribe_to_pk": {
+          "columns": [
+            "subscriber",
+            "subscribe_to"
+          ],
+          "name": "subscriptions_subscriber_subscribe_to_pk"
+        }
+      },
       "uniqueConstraints": {}
     },
     "users": {
@@ -404,6 +580,14 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "pronoun": {
+          "name": "pronoun",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'they/them'"
         },
         "profile_image": {
           "name": "profile_image",

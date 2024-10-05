@@ -4,11 +4,11 @@ import {
 	insertDraft,
 	publishDraft,
 	savePost,
-	readDraftFromUser,
-	findDraftsFromUser,
+	readDraft,
+	findDrafts,
 	findExistsPost,
 	findPosts,
-	findSavedPostsFromUser,
+	findSavedPosts,
 	updatePostMetadata,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
@@ -20,7 +20,6 @@ import {
 import { Hono } from "hono";
 import { User } from "lucia";
 import { nanoid } from "nanoid";
-import { parse } from "valibot";
 
 const postRoutes = new Hono<AppEnv>().basePath("/posts");
 
@@ -61,7 +60,7 @@ postRoutes.get("/saved", auth, valibot("query", PageQuerySchema), async (c) => {
 	const { id: userId, email, ...author } = c.get("user");
 	const pageQuery = c.req.valid("query");
 
-	const posts = await findSavedPostsFromUser(c.get("db"), userId, pageQuery);
+	const posts = await findSavedPosts(c.get("db"), userId, pageQuery);
 
 	if (!posts.length) {
 		return c.json({ state: "success", message: "No saved posts found" }, 404);
@@ -155,7 +154,7 @@ postRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
 	const { id: authorId, email, ...author } = c.get("user") as User;
 	const pageQuery = c.req.valid("query");
 
-	const posts = await findDraftsFromUser(c.get("db"), authorId, pageQuery);
+	const posts = await findDrafts(c.get("db"), authorId, pageQuery);
 
 	if (!posts.length) {
 		return c.json({ state: "success", message: "No drafts found" }, 404);
@@ -193,7 +192,7 @@ postRoutes.get("/drafts/:id", async (c) => {
 	const id = c.req.param("id");
 	const bucket = c.env.POSTS_BUCKET;
 
-	const post = await readDraftFromUser(c.get("db"), id, authorId);
+	const post = await readDraft(c.get("db"), id, authorId);
 
 	if (!post) {
 		return c.json({ state: "success", message: "Draft not found" }, 404);

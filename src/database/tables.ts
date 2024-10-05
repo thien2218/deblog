@@ -4,6 +4,7 @@ import {
 	primaryKey,
 	sqliteTable,
 	text,
+	unique,
 } from "drizzle-orm/sqlite-core";
 
 export const usersTable = sqliteTable("users", {
@@ -16,6 +17,7 @@ export const usersTable = sqliteTable("users", {
 		.default(false)
 		.notNull(),
 	name: text("name").notNull(),
+	pronoun: text("pronoun").notNull().default("they/them"),
 	profileImage: text("profile_image"),
 	role: text("role"),
 	bio: text("bio"),
@@ -34,21 +36,49 @@ export const sessionsTable = sqliteTable("sessions", {
 	expiresAt: integer("expires_at").notNull(),
 });
 
-export const postsTable = sqliteTable("posts", {
+export const postsTable = sqliteTable(
+	"posts",
+	{
+		id: text("id").primaryKey(),
+		seriesId: text("series_id").references(() => seriesTable.id, {
+			onDelete: "set null",
+		}),
+		seriesOrder: integer("series_order"),
+		authorId: text("author_id").references(() => usersTable.id, {
+			onDelete: "set null",
+		}),
+		title: text("title").notNull().unique(),
+		description: text("description"),
+		published: integer("published", { mode: "boolean" })
+			.notNull()
+			.default(false),
+		// coverImage: text("cover_image"),
+		createdAt: integer("created_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+		updatedAt: integer("updated_at", { mode: "timestamp" })
+			.notNull()
+			.default(sql`(unixepoch())`),
+	},
+	(table) => ({
+		seriesUniqueOrder: unique("series_order_unique").on(
+			table.seriesId,
+			table.seriesOrder
+		),
+	})
+);
+
+export const seriesTable = sqliteTable("series", {
 	id: text("id").primaryKey(),
 	authorId: text("author_id").references(() => usersTable.id, {
 		onDelete: "set null",
 	}),
 	title: text("title").notNull().unique(),
 	description: text("description"),
-	published: integer("published", { mode: "boolean" })
-		.notNull()
-		.default(false),
-	// coverImage: text("cover_image"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
-	updatedAt: integer("updated_at", { mode: "timestamp" })
+	lastPostAddedAt: integer("last_post_added_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
@@ -91,7 +121,7 @@ export const reportsTable = sqliteTable(
 	{
 		reporter: text("reporter")
 			.notNull()
-			.references(() => usersTable.id, { onDelete: "cascade" }),
+			.references(() => usersTable.id, { onDelete: "set null" }),
 		reported: text("reported").notNull(),
 		resourceType: text("resource_type").notNull(),
 		reason: text("reason").notNull(),

@@ -5,7 +5,7 @@ import {
 	findProfile,
 	updateProfile,
 	checkResourceExists,
-	sendReportFromUser,
+	sendReport,
 	subscribeToUser,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
@@ -123,7 +123,7 @@ userRoutes.post(
 			return c.text("Reported resource not found", 404);
 		}
 
-		await sendReportFromUser(db, id, payload);
+		await sendReport(db, id, payload);
 
 		return c.text("Report sent successfully");
 	}

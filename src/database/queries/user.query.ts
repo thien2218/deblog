@@ -16,6 +16,7 @@ export const findProfile = async (db: DrizzleD1Database, username: string) => {
 			username: usersTable.username,
 			name: usersTable.name,
 			profileImage: usersTable.profileImage,
+			pronoun: usersTable.pronoun,
 			role: usersTable.role,
 			bio: usersTable.bio,
 			website: usersTable.website,
@@ -54,7 +55,6 @@ export const checkResourceExists = async (
 		comment: commentsTable,
 	};
 	const table = tables[resourceType];
-
 	const query = db.select().from(table).where(eq(table.id, id));
 
 	return await db
@@ -62,7 +62,7 @@ export const checkResourceExists = async (
 		.catch(handleDbError);
 };
 
-export const sendReportFromUser = async (
+export const sendReport = async (
 	db: DrizzleD1Database,
 	userId: string,
 	payload: SendReport
