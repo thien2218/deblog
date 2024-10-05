@@ -36,37 +36,24 @@ export const sessionsTable = sqliteTable("sessions", {
 	expiresAt: integer("expires_at").notNull(),
 });
 
-export const postsTable = sqliteTable(
-	"posts",
-	{
-		id: text("id").primaryKey(),
-		seriesId: text("series_id").references(() => seriesTable.id, {
-			onDelete: "set null",
-		}),
-		seriesOrder: integer("series_order"),
-		authorId: text("author_id").references(() => usersTable.id, {
-			onDelete: "set null",
-		}),
-		title: text("title").notNull().unique(),
-		description: text("description"),
-		published: integer("published", { mode: "boolean" })
-			.notNull()
-			.default(false),
-		// coverImage: text("cover_image"),
-		createdAt: integer("created_at", { mode: "timestamp" })
-			.notNull()
-			.default(sql`(unixepoch())`),
-		updatedAt: integer("updated_at", { mode: "timestamp" })
-			.notNull()
-			.default(sql`(unixepoch())`),
-	},
-	(table) => ({
-		seriesUniqueOrder: unique("series_order_unique").on(
-			table.seriesId,
-			table.seriesOrder
-		),
-	})
-);
+export const postsTable = sqliteTable("posts", {
+	id: text("id").primaryKey(),
+	authorId: text("author_id").references(() => usersTable.id, {
+		onDelete: "set null",
+	}),
+	title: text("title").notNull().unique(),
+	description: text("description"),
+	published: integer("published", { mode: "boolean" })
+		.notNull()
+		.default(false),
+	// coverImage: text("cover_image"),
+	createdAt: integer("created_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+	updatedAt: integer("updated_at", { mode: "timestamp" })
+		.notNull()
+		.default(sql`(unixepoch())`),
+});
 
 export const seriesTable = sqliteTable("series", {
 	id: text("id").primaryKey(),
@@ -82,6 +69,27 @@ export const seriesTable = sqliteTable("series", {
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
+
+export const postSeriesTable = sqliteTable(
+	"post_series",
+	{
+		id: text("id").primaryKey(),
+		postId: text("post_id")
+			.notNull()
+			.references(() => postsTable.id, { onDelete: "cascade" }),
+		seriesId: text("series_id")
+			.notNull()
+			.references(() => seriesTable.id, { onDelete: "cascade" }),
+		order: integer("order").notNull(),
+	},
+	(table) => ({
+		seriesOrderUnique: unique("series_order_unique").on(
+			table.postId,
+			table.seriesId,
+			table.order
+		),
+	})
+);
 
 export const savedPostsTable = sqliteTable(
 	"saved_posts",
