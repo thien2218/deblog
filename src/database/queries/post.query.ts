@@ -27,7 +27,7 @@ export const findPosts = async (
 		.select({ post: postSchema, author: authorSchema })
 		.from(postsTable)
 		.where(eq(postsTable.published, true))
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.offset(sql.placeholder("offset"))
 		.limit(sql.placeholder("limit"))
 		.prepare();
@@ -50,7 +50,7 @@ export const findPostsFromAuthor = async (
 				eq(postsTable.published, true)
 			)
 		)
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.orderBy(desc(postsTable.createdAt))
 		.limit(sql.placeholder("limit"))
 		.offset(sql.placeholder("offset"))
@@ -134,7 +134,7 @@ export const readPostFromAuthor = async (
 				eq(postsTable.published, true)
 			)
 		)
-		.innerJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
 		.prepare();
 
 	return query.get({ id, username }).catch(handleDbError);

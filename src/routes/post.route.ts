@@ -98,7 +98,7 @@ postRoutes.put(
 		const id = c.req.param("id");
 		const { id: authorId } = c.get("user") as User;
 		const bucket = c.env.POSTS_BUCKET;
-		const { content } = await c.req.valid("json");
+		const { content } = c.req.valid("json");
 
 		const { exists } = await findExistsPost(c.get("db"), id, authorId);
 
@@ -108,13 +108,13 @@ postRoutes.put(
 
 		// Check if the post exists in the bucket
 		try {
-			await bucket.head(`${authorId}/${id}`);
+			await bucket.head(`posts/${id}`);
 		} catch (error) {
 			console.log(error);
 			return c.text("No post/draft found in the bucket", 404);
 		}
 
-		await bucket.put(`${authorId}/${id}`, content);
+		await bucket.put(`posts/${id}`, content);
 
 		return c.text("Blog post content updated successfully");
 	}
@@ -135,7 +135,7 @@ postRoutes.delete("/:id", async (c) => {
 		);
 	}
 
-	await bucket.delete(`${authorId}/${id}`);
+	await bucket.delete(`posts/${id}`);
 
 	const type = data.isPublished ? "Blog post" : "Draft";
 

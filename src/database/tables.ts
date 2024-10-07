@@ -73,7 +73,6 @@ export const seriesTable = sqliteTable("series", {
 export const postSeriesTable = sqliteTable(
 	"post_series",
 	{
-		id: text("id").primaryKey(),
 		postId: text("post_id")
 			.notNull()
 			.references(() => postsTable.id, { onDelete: "cascade" }),
@@ -83,11 +82,8 @@ export const postSeriesTable = sqliteTable(
 		order: integer("order").notNull(),
 	},
 	(table) => ({
-		seriesOrderUnique: unique("series_order_unique").on(
-			table.postId,
-			table.seriesId,
-			table.order
-		),
+		pk: primaryKey({ columns: [table.postId, table.seriesId] }),
+		orderUnique: unique("order_unique").on(table.postId, table.order),
 	})
 );
 
@@ -158,6 +154,7 @@ export const subscriptionsTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.subscriber, table.subscribeTo] }),
+		// TODO: Check that subscriber and subscribeTo are not equal
 	})
 );
 

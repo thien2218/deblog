@@ -40,7 +40,7 @@ draftRoutes.post("/drafts", async (c) => {
 	const bucket = c.env.POSTS_BUCKET;
 
 	await insertDraft(c.get("db"), id, authorId);
-	await bucket.put(`${authorId}/${id}`, "");
+	await bucket.put(`posts/${id}`, "");
 
 	return c.json(
 		{
@@ -64,7 +64,7 @@ draftRoutes.get("/drafts/:id", async (c) => {
 		return c.json({ state: "success", message: "Draft not found" }, 404);
 	}
 
-	const obj = await bucket.get(`${authorId}/${id}`);
+	const obj = await bucket.get(`posts/${id}`);
 
 	if (!obj) {
 		return c.json({ state: "success", message: "Draft not found" }, 404);
@@ -85,7 +85,7 @@ draftRoutes.post("/drafts/:id/publish", async (c) => {
 	const { id: authorId } = c.get("user") as User;
 	const bucket = c.env.POSTS_BUCKET;
 
-	const obj = await bucket.get(`${authorId}/${id}`);
+	const obj = await bucket.get(`posts/${id}`);
 
 	if (!obj) {
 		return c.text("No draft found in the bucket", 404);

@@ -7,7 +7,7 @@ import {
 	checkResourceExists,
 	sendReport,
 	subscribeToUser,
-	findSeries,
+	findSeriesByAuthor,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
 import {
@@ -71,7 +71,7 @@ userRoutes.get("/:username/posts/:id", async (c) => {
 		return c.json({ state: "success", message: "Post not found" }, 404);
 	}
 
-	const obj = await bucket.get(`${data.author.id}/${id}`);
+	const obj = await bucket.get(`posts/${id}`);
 
 	if (!obj) {
 		return c.text("No post found in the bucket", 404);
@@ -148,7 +148,7 @@ userRoutes.post("/:username/subscribe", auth, async (c) => {
 userRoutes.get("/:username/series", async (c) => {
 	const username = c.req.param("username");
 
-	const series = await findSeries(c.get("db"), username);
+	const series = await findSeriesByAuthor(c.get("db"), username);
 
 	if (!series.length) {
 		return c.json({ state: "success", message: "No series found" }, 404);
