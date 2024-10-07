@@ -1,7 +1,10 @@
 import {
+	array,
 	InferOutput,
+	length,
 	maxLength,
 	minLength,
+	nanoid,
 	nonEmpty,
 	object,
 	optional,
@@ -30,5 +33,19 @@ export const CreateSeriesSchema = object({
 
 export const UpdateSeriesSchema = partial(CreateSeriesSchema);
 
+export const AddPostsToSeriesSchema = object({
+	postIds: pipe(
+		array(
+			pipe(
+				string(),
+				nanoid("Invalid post ID"),
+				length(25, "Invalid post ID")
+			)
+		),
+		nonEmpty("List of post IDs must not be empty")
+	),
+});
+
 export type CreateSeries = InferOutput<typeof CreateSeriesSchema>;
 export type UpdateSeries = InferOutput<typeof UpdateSeriesSchema>;
+export type AddPostsToSeries = InferOutput<typeof AddPostsToSeriesSchema>;
