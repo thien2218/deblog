@@ -83,7 +83,10 @@ export const postSeriesTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.postId, table.seriesId] }),
-		orderUnique: unique("order_unique").on(table.postId, table.order),
+		postOrderUnique: unique("post_order_unique").on(
+			table.postId,
+			table.order
+		),
 	})
 );
 
@@ -154,7 +157,6 @@ export const subscriptionsTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.subscriber, table.subscribeTo] }),
-		// TODO: Check that subscriber and subscribeTo are not equal
 	})
 );
 
