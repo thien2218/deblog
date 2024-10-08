@@ -18,7 +18,7 @@ export const handleDbError = ({ message }: { message: string }) => {
 			const fields = message
 				.split(": ")[2]
 				.split(", ")
-				.map((f) => f.split(".")[1]);
+				.map((f) => f);
 
 			error.fields = fields;
 		}

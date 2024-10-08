@@ -149,15 +149,9 @@ export const updatePostMetadata = async (
 	const query = db
 		.update(postsTable)
 		.set(payload)
-		.where(
-			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId"))
-			)
-		)
-		.prepare();
+		.where(and(eq(postsTable.id, id), eq(postsTable.authorId, authorId)));
 
-	return query.run({ id, authorId }).catch(handleDbError);
+	return query.run().catch(handleDbError);
 };
 
 export const findExistsPost = async (
@@ -246,12 +240,11 @@ export const publishDraft = async (
 		.set({ published: true })
 		.where(
 			and(
-				eq(postsTable.id, sql.placeholder("id")),
-				eq(postsTable.authorId, sql.placeholder("authorId")),
+				eq(postsTable.id, id),
+				eq(postsTable.authorId, authorId),
 				eq(postsTable.published, false)
 			)
-		)
-		.prepare();
+		);
 
-	return query.run({ id, authorId }).catch(handleDbError);
+	return query.run().catch(handleDbError);
 };

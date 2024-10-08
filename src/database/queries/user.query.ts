@@ -38,10 +38,9 @@ export const updateProfile = async (
 	const query = db
 		.update(usersTable)
 		.set(payload)
-		.where(eq(usersTable.id, sql.placeholder("userId")))
-		.prepare();
+		.where(eq(usersTable.id, userId));
 
-	return query.run({ userId }).catch(handleDbError);
+	return query.run().catch(handleDbError);
 };
 
 export const checkResourceExists = async (

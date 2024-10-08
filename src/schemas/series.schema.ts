@@ -36,29 +36,30 @@ export const CreateSeriesSchema = object({
 
 export const UpdateSeriesSchema = partial(CreateSeriesSchema);
 
-export const PostIdsSchema = object({
-	postIds: pipe(
-		array(
-			pipe(
+export const PostIdsSchema = pipe(
+	array(
+		pipe(string(), nanoid("Invalid post ID"), length(25, "Invalid post ID"))
+	),
+	nonEmpty("List of post IDs must not be empty")
+);
+
+export const UpdateSeriesPostsSchema = pipe(
+	array(
+		object({
+			id: pipe(
 				string(),
 				nanoid("Invalid post ID"),
 				length(25, "Invalid post ID")
-			)
-		),
-		nonEmpty("List of post IDs must not be empty")
+			),
+			newOrder: pipe(
+				number(),
+				integer("Order must be an integer"),
+				minValue(1, "Order must be at least 1")
+			),
+		})
 	),
-});
-
-export const UpdateSeriesPostsSchema = object({
-	postIds: array(
-		pipe(string(), nanoid("Invalid post ID"), length(25, "Invalid post ID"))
-	),
-	minOrder: pipe(
-		number("Post min order must be a number"),
-		integer("Post min order must be an integer"),
-		minValue(1, "Post min order must be at least 1")
-	),
-});
+	nonEmpty("List of post IDs must not be empty")
+);
 
 export type CreateSeries = InferOutput<typeof CreateSeriesSchema>;
 export type UpdateSeries = InferOutput<typeof UpdateSeriesSchema>;

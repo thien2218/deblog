@@ -9,6 +9,7 @@ import {
 	getSeriesMaxOrder,
 	isSeriesByAuthor,
 	removeSeriesPosts,
+	reorderSeriesPosts,
 	updateSeries,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
@@ -110,7 +111,7 @@ seriesRoutes.post(
 	async (c) => {
 		const id = c.req.param("id");
 		const { id: authorId } = c.get("user") as User;
-		const { postIds } = c.req.valid("json");
+		const postIds = c.req.valid("json");
 
 		const { valid } = await isSeriesByAuthor(c.get("db"), id, authorId);
 
@@ -148,7 +149,7 @@ seriesRoutes.post(
 seriesRoutes.delete("/:id/posts", valibot("json", PostIdsSchema), async (c) => {
 	const id = c.req.param("id");
 	const { id: authorId } = c.get("user") as User;
-	const { postIds } = c.req.valid("json");
+	const postIds = c.req.valid("json");
 
 	const { valid } = await isSeriesByAuthor(c.get("db"), id, authorId);
 
@@ -180,7 +181,7 @@ seriesRoutes.put(
 	async (c) => {
 		const id = c.req.param("id");
 		const { id: authorId } = c.get("user") as User;
-		const payload = c.req.valid("json");
+		const posts = c.req.valid("json");
 
 		const { valid } = await isSeriesByAuthor(c.get("db"), id, authorId);
 
@@ -193,6 +194,16 @@ seriesRoutes.put(
 				403
 			);
 		}
+
+		const validPostIds = (
+			await reorderSeriesPosts(c.get("db"), id, posts)
+		).map(({ postId }) => postId);
+
+		return c.json({
+			message: "Posts reordered successfully",
+			state: "success",
+			output: validPostIds,
+		});
 	}
 );
 

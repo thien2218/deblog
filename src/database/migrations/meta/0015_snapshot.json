@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5a3a3e12-c1fe-4215-b2c5-c16dfebdfab1",
-  "prevId": "e758477a-9d96-42a8-8599-a6e1d2dd24da",
+  "id": "860dfa5d-4609-42ae-bf85-1cef9c02c66c",
+  "prevId": "41ed7304-753b-4501-9ce7-76d6cee54b85",
   "tables": {
     "comments": {
       "name": "comments",
@@ -84,6 +84,138 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
+    "post_series": {
+      "name": "post_series",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "series_order_unique": {
+          "name": "series_order_unique",
+          "columns": [
+            "series_id",
+            "order"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "post_series_post_id_posts_id_fk": {
+          "name": "post_series_post_id_posts_id_fk",
+          "tableFrom": "post_series",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_series_series_id_series_id_fk": {
+          "name": "post_series_series_id_series_id_fk",
+          "tableFrom": "post_series",
+          "tableTo": "series",
+          "columnsFrom": [
+            "series_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "post_series_post_id_series_id_pk": {
+          "columns": [
+            "post_id",
+            "series_id"
+          ],
+          "name": "post_series_post_id_series_id_pk"
+        }
+      },
+      "uniqueConstraints": {}
+    },
+    "post_tags": {
+      "name": "post_tags",
+      "columns": {
+        "post_id": {
+          "name": "post_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tag_name": {
+          "name": "tag_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "post_tags_post_id_posts_id_fk": {
+          "name": "post_tags_post_id_posts_id_fk",
+          "tableFrom": "post_tags",
+          "tableTo": "posts",
+          "columnsFrom": [
+            "post_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "post_tags_tag_name_tags_name_fk": {
+          "name": "post_tags_tag_name_tags_name_fk",
+          "tableFrom": "post_tags",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tag_name"
+          ],
+          "columnsTo": [
+            "name"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "post_tags_post_id_tag_name_pk": {
+          "columns": [
+            "post_id",
+            "tag_name"
+          ],
+          "name": "post_tags_post_id_tag_name_pk"
+        }
+      },
+      "uniqueConstraints": {}
+    },
     "posts": {
       "name": "posts",
       "columns": {
@@ -92,20 +224,6 @@
           "type": "text",
           "primaryKey": true,
           "notNull": true,
-          "autoincrement": false
-        },
-        "series_id": {
-          "name": "series_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "series_order": {
-          "name": "series_order",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
           "autoincrement": false
         },
         "author_id": {
@@ -161,30 +279,9 @@
             "title"
           ],
           "isUnique": true
-        },
-        "series_order_unique": {
-          "name": "series_order_unique",
-          "columns": [
-            "series_id",
-            "series_order"
-          ],
-          "isUnique": true
         }
       },
       "foreignKeys": {
-        "posts_series_id_series_id_fk": {
-          "name": "posts_series_id_series_id_fk",
-          "tableFrom": "posts",
-          "tableTo": "series",
-          "columnsFrom": [
-            "series_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
         "posts_author_id_users_id_fk": {
           "name": "posts_author_id_users_id_fk",
           "tableFrom": "posts",
@@ -525,6 +622,22 @@
           "name": "subscriptions_subscriber_subscribe_to_pk"
         }
       },
+      "uniqueConstraints": {}
+    },
+    "tags": {
+      "name": "tags",
+      "columns": {
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
       "uniqueConstraints": {}
     },
     "users": {

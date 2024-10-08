@@ -5,7 +5,7 @@ import {
 	seriesTable,
 	usersTable,
 } from "../tables";
-import { and, eq, inArray, max, sql } from "drizzle-orm";
+import { and, eq, inArray, max, SQL, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 import { CreateSeries, UpdateSeries, UpdateSeriesPosts } from "@/schemas";
 import { nanoid } from "nanoid";
@@ -123,15 +123,9 @@ export const updateSeries = async (
 	const query = db
 		.update(seriesTable)
 		.set(payload)
-		.where(
-			and(
-				eq(seriesTable.id, sql.placeholder("id")),
-				eq(seriesTable.authorId, sql.placeholder("authorId"))
-			)
-		)
-		.prepare();
+		.where(and(eq(seriesTable.id, id), eq(seriesTable.authorId, authorId)));
 
-	return query.run({ id, authorId }).catch(handleDbError);
+	return query.run().catch(handleDbError);
 };
 
 export const deleteSeries = async (
@@ -228,7 +222,27 @@ export const removeSeriesPosts = async (
 export const reorderSeriesPosts = async (
 	db: DrizzleD1Database,
 	seriesId: string,
-	{ postIds, minOrder }: UpdateSeriesPosts
+	posts: UpdateSeriesPosts
 ) => {
-	//
+	const chunks: SQL[] = [sql`case`];
+
+	for (const { id, newOrder } of posts) {
+		chunks.push(sql`when ${postSeriesTable.postId} = ${id} then ${newOrder}`);
+	}
+
+	const query = db
+		.update(postSeriesTable)
+		.set({ order: sql.join(chunks, sql` `) })
+		.where(
+			and(
+				eq(postSeriesTable.seriesId, seriesId),
+				inArray(
+					postSeriesTable.postId,
+					posts.map(({ id }) => id)
+				)
+			)
+		)
+		.returning({ postId: postSeriesTable.postId });
+
+	return query.all().catch(handleDbError);
 };

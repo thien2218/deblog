@@ -3,7 +3,7 @@
 	"scripts": {
 		"dev": "wrangler dev src/index.ts",
 		"deploy": "wrangler deploy --minify src/index.ts",
-		"db:test": "wrangler d1 execute deblog-db --local --file=./test.sql",
+		"db:query:test": "wrangler d1 execute deblog-db --local --file=./test.sql",
 		"db:generate": "drizzle-kit generate",
 		"db:migrate:local": "wrangler d1 migrations apply deblog-db --local",
 		"db:migrate:remote": "wrangler d1 migrations apply deblog-db --remote",

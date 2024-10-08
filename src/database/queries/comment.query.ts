@@ -59,14 +59,13 @@ export const editComment = async (
 		.set({ edited: true, content })
 		.where(
 			and(
-				eq(commentsTable.id, sql.placeholder("commentId")),
-				eq(commentsTable.postId, sql.placeholder("postId")),
-				eq(commentsTable.authorId, sql.placeholder("authorId"))
+				eq(commentsTable.id, commentId),
+				eq(commentsTable.postId, postId),
+				eq(commentsTable.authorId, authorId)
 			)
-		)
-		.prepare();
+		);
 
-	return query.run({ commentId, postId, authorId }).catch(handleDbError);
+	return query.run().catch(handleDbError);
 };
 
 export const deleteComment = async (
