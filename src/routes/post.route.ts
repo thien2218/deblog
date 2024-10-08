@@ -142,10 +142,4 @@ postRoutes.delete("/:id", async (c) => {
 	return c.text(`${type} deleted successfully`);
 });
 
-// Add tags to a post
-postRoutes.post("/:id/tags");
-
-// Remove tags from a post
-postRoutes.delete("/:id/tags");
-
 export default postRoutes;

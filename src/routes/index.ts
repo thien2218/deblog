@@ -5,3 +5,4 @@ export { default as uploadRoutes } from "./upload.route";
 export { default as commentRoutes } from "./comment.route";
 export { default as draftRoutes } from "./draft.route";
 export { default as seriesRoutes } from "./series.route";
+export { default as tagRoutes } from "./tag.route";

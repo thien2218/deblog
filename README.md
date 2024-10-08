@@ -2,8 +2,6 @@
 
 [x] Log in/sign up with email + password
 
-[ ] OAuth & Passkeys
-
 [x] CRUD operations on blog posts
 
 [x] CRUD operations on drafts (posts that are not published)
@@ -12,21 +10,37 @@
 
 [x] CRUD operations on profiles
 
-[ ] Add tags to their posts
+[x] Create/update/delete series
+
+[x] Add tags to posts
 
 [ ] React to a post/comment
 
 [ ] Reply to comments
 
-[ ] Confirm/change email, reset/change password, change username
+[ ] OAuth & Passkeys
 
-[x] Create/update/delete series
+[ ] Confirm/change email, reset/change password, change username
 
 [ ] Sort by relevance or recency for public posts and relevance, most/least recency or alphabet for their posts (draft/saved/published)
 
-[ ] Search for posts
-
 [ ] Upload images for their profile, post's thumbnail
+
+[ ] Search & search parsing
+
+## Pipelined tasks:
+
+[x] Implement tagging feature
+
+[ ] Implement reaction feature
+
+[ ] Implement reply feature
+
+[ ] Add KV as config cache
+
+[ ] Write a DB adapter for Lucia
+
+[ ] Add message queue to listen to events
 
 ## Add-ons:
 

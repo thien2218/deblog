@@ -173,6 +173,7 @@ export const postTagsTable = sqliteTable(
 		tagName: text("tag_name")
 			.notNull()
 			.references(() => tagsTable.name, { onDelete: "cascade" }),
+		originalTag: text("original_tag").notNull(),
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.postId, table.tagName] }),
