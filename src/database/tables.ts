@@ -83,8 +83,8 @@ export const postSeriesTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.postId, table.seriesId] }),
-		postOrderUnique: unique("post_order_unique").on(
-			table.postId,
+		seriesOrderUnique: unique("series_order_unique").on(
+			table.seriesId,
 			table.order
 		),
 	})

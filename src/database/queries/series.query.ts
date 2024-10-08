@@ -7,7 +7,7 @@ import {
 } from "../tables";
 import { and, eq, inArray, max, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
-import { CreateSeries, UpdateSeries } from "@/schemas/series.schema";
+import { CreateSeries, UpdateSeries, UpdateSeriesPosts } from "@/schemas";
 import { nanoid } from "nanoid";
 
 const seriesColumns = {
@@ -210,12 +210,25 @@ export const removeSeriesPosts = async (
 	db: DrizzleD1Database,
 	seriesId: string,
 	postIds: string[]
-) => {};
+) => {
+	const query = db
+		.delete(postSeriesTable)
+		.where(
+			and(
+				eq(postSeriesTable.seriesId, sql.placeholder("seriesId")),
+				inArray(postSeriesTable.postId, sql.placeholder("postIds"))
+			)
+		)
+		.returning({ postId: postSeriesTable.postId })
+		.prepare();
+
+	return query.all({ seriesId, postIds }).catch(handleDbError);
+};
 
 export const reorderSeriesPosts = async (
 	db: DrizzleD1Database,
 	seriesId: string,
-	orders: SeriesPostsOrder[]
+	{ postIds, minOrder }: UpdateSeriesPosts
 ) => {
 	//
 };

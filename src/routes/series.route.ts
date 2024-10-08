@@ -8,13 +8,15 @@ import {
 	getSeriesById,
 	getSeriesMaxOrder,
 	isSeriesByAuthor,
+	removeSeriesPosts,
 	updateSeries,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
 import {
-	AddPostsToSeriesSchema,
+	PostIdsSchema,
 	CreateSeriesSchema,
 	UpdateSeriesSchema,
+	UpdateSeriesPostsSchema,
 } from "@/schemas";
 import { Hono } from "hono";
 import { User } from "lucia";
@@ -104,7 +106,7 @@ seriesRoutes.delete("/:id", async (c) => {
 seriesRoutes.post(
 	"/:id/posts",
 	auth,
-	valibot("json", AddPostsToSeriesSchema),
+	valibot("json", PostIdsSchema),
 	async (c) => {
 		const id = c.req.param("id");
 		const { id: authorId } = c.get("user") as User;
@@ -143,9 +145,55 @@ seriesRoutes.post(
 );
 
 // Remove posts from a series
-seriesRoutes.delete("/:id/posts");
+seriesRoutes.delete("/:id/posts", valibot("json", PostIdsSchema), async (c) => {
+	const id = c.req.param("id");
+	const { id: authorId } = c.get("user") as User;
+	const { postIds } = c.req.valid("json");
+
+	const { valid } = await isSeriesByAuthor(c.get("db"), id, authorId);
+
+	if (!valid) {
+		return c.json(
+			{
+				message: "You are not authorized to perform this action",
+				state: "error",
+			},
+			403
+		);
+	}
+
+	const validPostIds = (await removeSeriesPosts(c.get("db"), id, postIds)).map(
+		({ postId }) => postId
+	);
+
+	return c.json({
+		message: "Posts removed from series successfully",
+		state: "success",
+		output: validPostIds,
+	});
+});
 
 // Reorder posts in a series
-seriesRoutes.put("/:id/posts");
+seriesRoutes.put(
+	"/:id/posts",
+	valibot("json", UpdateSeriesPostsSchema),
+	async (c) => {
+		const id = c.req.param("id");
+		const { id: authorId } = c.get("user") as User;
+		const payload = c.req.valid("json");
+
+		const { valid } = await isSeriesByAuthor(c.get("db"), id, authorId);
+
+		if (!valid) {
+			return c.json(
+				{
+					message: "You are not authorized to perform this action",
+					state: "error",
+				},
+				403
+			);
+		}
+	}
+);
 
 export default seriesRoutes;

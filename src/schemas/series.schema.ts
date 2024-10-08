@@ -1,11 +1,14 @@
 import {
 	array,
 	InferOutput,
+	integer,
 	length,
 	maxLength,
 	minLength,
+	minValue,
 	nanoid,
 	nonEmpty,
+	number,
 	object,
 	optional,
 	partial,
@@ -33,7 +36,7 @@ export const CreateSeriesSchema = object({
 
 export const UpdateSeriesSchema = partial(CreateSeriesSchema);
 
-export const AddPostsToSeriesSchema = object({
+export const PostIdsSchema = object({
 	postIds: pipe(
 		array(
 			pipe(
@@ -46,6 +49,18 @@ export const AddPostsToSeriesSchema = object({
 	),
 });
 
+export const UpdateSeriesPostsSchema = object({
+	postIds: array(
+		pipe(string(), nanoid("Invalid post ID"), length(25, "Invalid post ID"))
+	),
+	minOrder: pipe(
+		number("Post min order must be a number"),
+		integer("Post min order must be an integer"),
+		minValue(1, "Post min order must be at least 1")
+	),
+});
+
 export type CreateSeries = InferOutput<typeof CreateSeriesSchema>;
 export type UpdateSeries = InferOutput<typeof UpdateSeriesSchema>;
-export type AddPostsToSeries = InferOutput<typeof AddPostsToSeriesSchema>;
+export type PostIds = InferOutput<typeof PostIdsSchema>;
+export type UpdateSeriesPosts = InferOutput<typeof UpdateSeriesPostsSchema>;
