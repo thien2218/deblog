@@ -5,6 +5,7 @@ import {
 	commentRoutes,
 	draftRoutes,
 	postRoutes,
+	reactionRoutes,
 	seriesRoutes,
 	tagRoutes,
 	uploadRoutes,
@@ -32,5 +33,6 @@ app.route("/", commentRoutes);
 app.route("/", seriesRoutes);
 app.route("/", draftRoutes);
 app.route("/", tagRoutes);
+app.route("/", reactionRoutes);
 
 export default app;

@@ -7,6 +7,7 @@ export * from "./user.schema";
 export * from "./comment.schema";
 export * from "./series.schema";
 export * from "./tag.schema";
+export * from "./reaction.schema";
 
 export const JSONResponseSchema = pipe(
 	object({

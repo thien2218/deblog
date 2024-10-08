@@ -16,7 +16,7 @@
 
 [X] Reply to comments
 
-[ ] React to a post/comment
+[X] React to a post/comment
 
 [ ] OAuth & Passkeys
 
@@ -32,11 +32,7 @@
 
 ## Pipelined tasks:
 
-[x] Implement tagging feature
-
-[ ] Implement reaction feature
-
-[ ] Implement reply feature
+[ ] Separate user profile from their auth data
 
 [ ] Add KV as config cache
 
