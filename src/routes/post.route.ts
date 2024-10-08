@@ -20,9 +20,9 @@ const postRoutes = new Hono<AppEnv>().basePath("/posts");
 
 // Get many posts
 postRoutes.get("/", valibot("query", PageQuerySchema), async (c) => {
-	const pageQuery = c.req.valid("query");
+	const page = c.req.valid("query");
 
-	const data = await findPosts(c.get("db"), pageQuery);
+	const data = await findPosts(c.get("db"), page);
 
 	if (!data.length) {
 		return c.json({ message: "No blog posts found", state: "success" }, 404);
@@ -51,9 +51,9 @@ postRoutes.post("/:id/save", auth, async (c) => {
 // Get saved posts of a user
 postRoutes.get("/saved", auth, valibot("query", PageQuerySchema), async (c) => {
 	const { id: userId, email, ...author } = c.get("user");
-	const pageQuery = c.req.valid("query");
+	const page = c.req.valid("query");
 
-	const posts = await findSavedPosts(c.get("db"), userId, pageQuery);
+	const posts = await findSavedPosts(c.get("db"), userId, page);
 
 	if (!posts.length) {
 		return c.json({ state: "success", message: "No saved posts found" }, 404);

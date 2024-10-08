@@ -1,12 +1,15 @@
 import { AppEnv } from "@/context";
 import {
 	addComment,
+	addReply,
 	deleteComment,
 	editComment,
 	getCommentsOfPost,
+	getRepliesOfComment,
+	getThreadValidMentions,
 } from "@/database/queries";
 import { auth, valibot } from "@/middlewares";
-import { CommentSchema, PageQuerySchema } from "@/schemas";
+import { CommentSchema, PageQuerySchema, ReplySchema } from "@/schemas";
 import { Hono } from "hono";
 import { User } from "lucia";
 
@@ -53,8 +56,8 @@ commentRoutes.put("/:commentId", valibot("json", CommentSchema), async (c) => {
 
 	const { meta } = await editComment(
 		c.get("db"),
-		commentId,
 		postId,
+		commentId,
 		authorId,
 		content
 	);
@@ -74,8 +77,8 @@ commentRoutes.delete("/:commentId", async (c) => {
 
 	const { meta } = await deleteComment(
 		c.get("db"),
-		commentId,
 		postId,
+		commentId,
 		authorId
 	);
 
@@ -85,5 +88,81 @@ commentRoutes.delete("/:commentId", async (c) => {
 
 	return c.json({ message: "Comment deleted successfully", state: "success" });
 });
+
+// Get replies of a comment
+commentRoutes.get(
+	"/:commentId/replies",
+	valibot("query", PageQuerySchema),
+	async (c) => {
+		const postId = c.req.param("postId");
+		const parentId = c.req.param("commentId");
+		const page = c.req.valid("query");
+
+		const replies = await getRepliesOfComment(
+			c.get("db"),
+			postId,
+			parentId,
+			page
+		);
+
+		if (!replies.length) {
+			return c.json({ message: "No replies found", state: "success" }, 404);
+		}
+
+		return c.json({
+			message: "Replies fetched successfully",
+			state: "success",
+			output: replies,
+		});
+	}
+);
+
+// Get usernames in comment thread to mention
+commentRoutes.get("/:commentId/mentions", async (c) => {
+	const postId = c.req.param("postId");
+	const parentId = c.req.param("commentId");
+
+	const mentions = (
+		await getThreadValidMentions(c.get("db"), postId, parentId)
+	).map(({ mention }) => mention);
+
+	return c.json({
+		message: "Mentions fetched successfully",
+		state: "success",
+		output: mentions,
+	});
+});
+
+// Reply to a comment
+commentRoutes.post(
+	"/:commentId/replies",
+	auth,
+	valibot("json", ReplySchema),
+	async (c) => {
+		const postId = c.req.param("postId");
+		const parentId = c.req.param("commentId");
+		const { id: authorId } = c.get("user");
+		const { content } = c.req.valid("json");
+
+		const mentionRegex = /(?<=\s@)[a-zA-Z0-9_-]+/g;
+		const mentions: string[] = content.match(mentionRegex) || [];
+
+		const validMentions = (
+			await getThreadValidMentions(c.get("db"), postId, parentId)
+		).map(({ mention }) => mention);
+
+		const output = await addReply(c.get("db"), postId, parentId, authorId, {
+			content,
+			mentions: validMentions.filter((mention) => {
+				return mentions.includes(mention);
+			}),
+		});
+
+		return c.json(
+			{ message: "Reply added successfully", state: "success", output },
+			201
+		);
+	}
+);
 
 export default commentRoutes;

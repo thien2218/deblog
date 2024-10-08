@@ -43,9 +43,9 @@ userRoutes.get(
 	valibot("query", PageQuerySchema),
 	async (c) => {
 		const username = c.req.param("username");
-		const pageQuery = c.req.valid("query");
+		const page = c.req.valid("query");
 
-		const data = await findPostsFromAuthor(c.get("db"), username, pageQuery);
+		const data = await findPostsFromAuthor(c.get("db"), username, page);
 
 		if (!data.length) {
 			return c.json({ state: "success", message: "No posts found" }, 404);

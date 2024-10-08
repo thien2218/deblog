@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+	AnySQLiteColumn,
 	integer,
 	primaryKey,
 	sqliteTable,
@@ -27,6 +28,22 @@ export const usersTable = sqliteTable("users", {
 		.notNull()
 		.default(sql`(unixepoch())`),
 });
+
+// export const profilesTable = sqliteTable("profiles", {
+// 	userId: text("user_id")
+// 		.primaryKey()
+// 		.references(() => usersTable.id, { onDelete: "cascade" }),
+// 	name: text("name").notNull(),
+// 	pronoun: text("pronoun").notNull().default("they/them"),
+// 	profileImage: text("profile_image"),
+// 	role: text("role"),
+// 	bio: text("bio"),
+// 	website: text("website"),
+// 	country: text("country"),
+// 	joinedSince: integer("joined_since", { mode: "timestamp" })
+// 		.notNull()
+// 		.default(sql`(unixepoch())`),
+// });
 
 export const sessionsTable = sqliteTable("sessions", {
 	id: text("id").primaryKey(),
@@ -116,6 +133,11 @@ export const commentsTable = sqliteTable("comments", {
 	postId: text("post_id").references(() => postsTable.id, {
 		onDelete: "set null",
 	}),
+	parentId: text("parent_id").references(
+		(): AnySQLiteColumn => commentsTable.id,
+		{ onDelete: "cascade" }
+	),
+	mentions: text("mentions", { mode: "json" }).$type<string[]>(),
 	content: text("content").notNull(),
 	edited: integer("edited", { mode: "boolean" }).notNull().default(false),
 	createdAt: integer("created_at", { mode: "timestamp" })
@@ -177,5 +199,20 @@ export const postTagsTable = sqliteTable(
 	},
 	(table) => ({
 		pk: primaryKey({ columns: [table.postId, table.tagName] }),
+	})
+);
+
+export const reactionsTable = sqliteTable(
+	"reactions",
+	{
+		userId: text("user_id")
+			.notNull()
+			.references(() => usersTable.id, { onDelete: "cascade" }),
+		targetId: text("target_id").notNull(),
+		targetType: text("target_type").notNull(),
+		reaction: text("reaction").notNull(),
+	},
+	(table) => ({
+		pk: primaryKey({ columns: [table.targetId, table.userId] }),
 	})
 );

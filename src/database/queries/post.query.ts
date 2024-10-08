@@ -19,10 +19,7 @@ const authorSchema = {
 	role: usersTable.role,
 };
 
-export const findPosts = async (
-	db: DrizzleD1Database,
-	pageQuery: PageQuery
-) => {
+export const findPosts = async (db: DrizzleD1Database, page: PageQuery) => {
 	const query = db
 		.select({ post: postSchema, author: authorSchema })
 		.from(postsTable)
@@ -32,13 +29,13 @@ export const findPosts = async (
 		.limit(sql.placeholder("limit"))
 		.prepare();
 
-	return query.all(pageQuery).catch(handleDbError);
+	return query.all(page).catch(handleDbError);
 };
 
 export const findPostsFromAuthor = async (
 	db: DrizzleD1Database,
 	username: string,
-	pageQuery: PageQuery
+	page: PageQuery
 ) => {
 	const query = db
 		.select({ post: postSchema, author: authorSchema })
@@ -56,13 +53,13 @@ export const findPostsFromAuthor = async (
 		.offset(sql.placeholder("offset"))
 		.prepare();
 
-	return query.all({ username, ...pageQuery }).catch(handleDbError);
+	return query.all({ username, ...page }).catch(handleDbError);
 };
 
 export const findSavedPosts = async (
 	db: DrizzleD1Database,
 	userId: string,
-	pageQuery: PageQuery
+	page: PageQuery
 ) => {
 	const query = db
 		.select(postSchema)
@@ -74,7 +71,7 @@ export const findSavedPosts = async (
 		.offset(sql.placeholder("offset"))
 		.prepare();
 
-	return query.all({ userId, ...pageQuery }).catch(handleDbError);
+	return query.all({ userId, ...page }).catch(handleDbError);
 };
 
 export const insertDraft = async (
@@ -191,7 +188,7 @@ export const deletePost = async (
 export const findDrafts = async (
 	db: DrizzleD1Database,
 	authorId: string,
-	pageQuery: PageQuery
+	page: PageQuery
 ) => {
 	const query = db
 		.select(postSchema)
@@ -207,7 +204,7 @@ export const findDrafts = async (
 		.offset(sql.placeholder("offset"))
 		.prepare();
 
-	return query.all({ authorId, ...pageQuery }).catch(handleDbError);
+	return query.all({ authorId, ...page }).catch(handleDbError);
 };
 
 export const readDraft = async (

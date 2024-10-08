@@ -1,22 +1,22 @@
 ## Core Features:
 
-[x] Log in/sign up with email + password
+[X] Log in/sign up with email + password
 
-[x] CRUD operations on blog posts
+[X] CRUD operations on blog posts
 
-[x] CRUD operations on drafts (posts that are not published)
+[X] CRUD operations on drafts (posts that are not published)
 
-[x] CRUD operations on comments
+[X] CRUD operations on comments
 
-[x] CRUD operations on profiles
+[X] CRUD operations on profiles
 
-[x] Create/update/delete series
+[X] Create/update/delete series
 
-[x] Add tags to posts
+[X] Add tags to posts
+
+[X] Reply to comments
 
 [ ] React to a post/comment
-
-[ ] Reply to comments
 
 [ ] OAuth & Passkeys
 
@@ -27,6 +27,8 @@
 [ ] Upload images for their profile, post's thumbnail
 
 [ ] Search & search parsing
+
+[ ] Activity log & view count
 
 ## Pipelined tasks:
 

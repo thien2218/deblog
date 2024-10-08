@@ -18,9 +18,9 @@ draftRoutes.use("*", auth);
 // Get drafts of a user
 draftRoutes.get("/drafts", valibot("query", PageQuerySchema), async (c) => {
 	const { id: authorId, email, ...author } = c.get("user") as User;
-	const pageQuery = c.req.valid("query");
+	const page = c.req.valid("query");
 
-	const posts = await findDrafts(c.get("db"), authorId, pageQuery);
+	const posts = await findDrafts(c.get("db"), authorId, page);
 
 	if (!posts.length) {
 		return c.json({ state: "success", message: "No drafts found" }, 404);
