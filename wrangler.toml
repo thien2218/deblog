@@ -11,9 +11,9 @@ migrations_dir = "./src/database/migrations"
 # [vars]
 # MY_VAR = "my-variable"
 
-# [[kv_namespaces]]
-# binding = "MY_KV_NAMESPACE"
-# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+[[kv_namespaces]]
+binding = "KV_PROFILES"
+id = "e45f05c509f14593a4c55a9ab595284b"
 
 [[r2_buckets]]
 binding = "POSTS_BUCKET"

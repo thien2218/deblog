@@ -46,8 +46,8 @@ export const handleDbError = ({ message }: { message: string }) => {
 	});
 };
 
-export function initializeLucia(db: DrizzleD1Database) {
-	const adapter = new DBAdapter(db);
+export function initializeLucia(db: DrizzleD1Database, kvProfile: KVNamespace) {
+	const adapter = new DBAdapter(db, kvProfile);
 
 	return new Lucia(adapter, {
 		sessionCookie: {

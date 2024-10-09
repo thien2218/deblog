@@ -13,5 +13,6 @@ export interface AppEnv extends Env {
 		DB: D1Database;
 		POSTS_BUCKET: R2Bucket;
 		IMAGES_BUCKET: R2Bucket;
+		KV_PROFILES: KVNamespace;
 	};
 }

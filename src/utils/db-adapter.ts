@@ -5,7 +5,7 @@ import { eq, lte, sql } from "drizzle-orm";
 import { handleDbError } from "./";
 
 class DBAdapter implements Adapter {
-	constructor(private db: DrizzleD1Database) {}
+	constructor(private db: DrizzleD1Database, private kvProfile: KVNamespace) {}
 
 	async deleteSession(sessionId: string) {
 		const query = this.db
@@ -36,7 +36,7 @@ class DBAdapter implements Adapter {
 	): Promise<[session: DatabaseSession | null, user: DatabaseUser | null]> {
 		const query = this.db
 			.select({
-				session: sessionsTable,
+				session: { expiresAt: sessionsTable.expiresAt },
 				user: {
 					id: usersTable.id,
 					email: usersTable.email,
@@ -57,12 +57,12 @@ class DBAdapter implements Adapter {
 		if (!result) return [null, null];
 
 		const {
-			session,
+			session: { expiresAt },
 			user: { id, ...attributes },
 		} = result;
 
 		return [
-			{ ...session, attributes: {} },
+			{ id: sessionId, userId: id, expiresAt, attributes: {} },
 			{ id, attributes },
 		];
 	}

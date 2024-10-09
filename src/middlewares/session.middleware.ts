@@ -6,7 +6,7 @@ import { getCookie } from "hono/cookie";
 
 const session: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const db = drizzle(c.env.DB, { logger: true });
-	const lucia = initializeLucia(db);
+	const lucia = initializeLucia(db, c.env.KV_PROFILES);
 
 	c.set("db", db);
 	c.set("lucia", lucia);
