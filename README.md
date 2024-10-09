@@ -32,11 +32,11 @@
 
 ## Pipelined tasks:
 
+[X] Write a DB adapter for Lucia
+
 [ ] Separate user profile from their auth data
 
-[ ] Add KV as config cache
-
-[ ] Write a DB adapter for Lucia
+[ ] Add KV as config and user data cache
 
 [ ] Add message queue to listen to events
 

@@ -1,10 +1,24 @@
 import { AppEnv } from "@/context";
-import { Hono } from "hono";
-import { LoginSchema, SignupSchema } from "@/schemas";
+import { Hono, MiddlewareHandler } from "hono";
+import { CreateProfileSchema, LoginSchema, SignupSchema } from "@/schemas";
 import { compare, hash } from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auth, unauth, valibot } from "@/middlewares";
-import { insertUser, findLoginUser } from "@/database/queries";
+import { insertUser, findLoginUser, createProfile } from "@/database/queries";
+import { User } from "lucia";
+
+const notOnboarded: MiddlewareHandler<AppEnv> = async (c, next) => {
+	const user = c.get("user");
+
+	if (!user) {
+		return c.text("User is not logged in", 401);
+	}
+	if (user.hasOnboarded) {
+		return c.text("User has already onboarded", 400);
+	}
+
+	return next();
+};
 
 const authRoutes = new Hono<AppEnv>().basePath("/auth");
 
@@ -21,7 +35,7 @@ authRoutes.post("/signup", unauth, valibot("json", SignupSchema), async (c) => {
 	const serializedCookie = lucia.createSessionCookie(session.id).serialize();
 
 	c.header("Set-Cookie", serializedCookie, { append: true });
-	c.header("Location", "/home", { append: true });
+	c.header("Location", "/onboard", { append: true });
 
 	return c.text("User signed up successfully", 201);
 });
@@ -51,6 +65,21 @@ authRoutes.post("/login", unauth, valibot("json", LoginSchema), async (c) => {
 
 	return c.text("User logged in successfully");
 });
+
+// Onboarding by creating a new profile
+authRoutes.post(
+	"/onboard",
+	notOnboarded,
+	valibot("json", CreateProfileSchema),
+	async (c) => {
+		const { id } = c.get("user") as User;
+		const payload = c.req.valid("json");
+
+		await createProfile(c.get("db"), id, payload);
+
+		return c.text("Profile created successfully", 201);
+	}
+);
 
 // Logout a user
 authRoutes.post("/logout", auth, async (c) => {

@@ -17,41 +17,43 @@ import {
 	url,
 } from "valibot";
 
-export const UpdateProfileSchema = pipe(
-	partial(
-		object({
-			name: pipe(
-				string(),
-				minLength(3, "Name must be at least 3 characters long"),
-				maxLength(50, "Name must be at most 50 characters long")
-			),
-			role: pipe(
-				string(),
-				minLength(3, "Title must be at least 3 characters long"),
-				maxLength(100, "Title must be at most 100 characters long")
-			),
-			bio: pipe(
-				string(),
-				minLength(3, "Bio must be at least 3 characters long"),
-				maxLength(500, "Bio must be at most 500 characters long")
-			),
-			website: pipe(
-				string(),
-				url("Website must be a valid URL"),
-				startsWith("https://", "Website URL must be secure")
-			),
-			country: picklist(countryCodes, "Provided country code is invalid"),
-			profileImage: pipe(
-				string(),
-				url("Profile image must be a valid URL"),
-				startsWith("https://", "Profile image URL must be secure")
-			),
-			pronoun: picklist(
-				["he/him", "she/her", "they/them"],
-				"Invalid pronoun"
-			),
-		})
+export const CreateProfileSchema = object({
+	name: pipe(
+		string(),
+		minLength(3, "Name must be at least 3 characters long"),
+		maxLength(50, "Name must be at most 50 characters long")
 	),
+	role: pipe(
+		string(),
+		minLength(3, "Title must be at least 3 characters long"),
+		maxLength(100, "Title must be at most 100 characters long")
+	),
+	bio: pipe(
+		string(),
+		minLength(3, "Bio must be at least 3 characters long"),
+		maxLength(500, "Bio must be at most 500 characters long")
+	),
+	website: pipe(
+		string(),
+		url("Website must be a valid URL"),
+		startsWith("https://", "Website URL must be secure")
+	),
+	country: picklist(countryCodes, "Provided country code is invalid"),
+	profileImage: pipe(
+		string(),
+		url("Profile image must be a valid URL"),
+		startsWith("https://", "Profile image URL must be secure")
+	),
+	pronoun: optional(
+		picklist(
+			["he/him", "she/her", "they/them"],
+			"Pronoun can only be he/him, she/her, or they/them"
+		)
+	),
+});
+
+export const UpdateProfileSchema = pipe(
+	partial(CreateProfileSchema),
 	check((v) => Object.keys(v).length > 0, "No fields to update")
 );
 
@@ -115,5 +117,6 @@ export const SendReportSchema = pipe(
 	)
 );
 
+export type CreateProfile = InferOutput<typeof CreateProfileSchema>;
 export type UpdateProfile = InferOutput<typeof UpdateProfileSchema>;
 export type SendReport = InferOutput<typeof SendReportSchema>;

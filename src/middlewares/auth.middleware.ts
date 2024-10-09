@@ -10,9 +10,9 @@ interface AuthEnv extends AppEnv {
 }
 
 const auth = createMiddleware<AuthEnv>(async (c, next) => {
-	const session = c.get("session");
+	const user = c.get("user");
 
-	if (!session) {
+	if (!user || !user.hasOnboarded) {
 		return c.text("User is not logged in", 401);
 	}
 

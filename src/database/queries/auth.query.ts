@@ -1,11 +1,11 @@
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { usersTable } from "../tables";
+import { profilesTable, usersTable } from "../tables";
 import { eq, or, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
+import { CreateProfile } from "@/schemas";
 
 type Signup = {
 	id: string;
-	name: string;
 	email: string;
 	username: string;
 	encryptedPassword: string;
@@ -16,7 +16,6 @@ export const insertUser = async (db: DrizzleD1Database, payload: Signup) => {
 		.insert(usersTable)
 		.values({
 			id: sql.placeholder("id"),
-			name: sql.placeholder("name"),
 			email: sql.placeholder("email"),
 			username: sql.placeholder("username"),
 			encryptedPassword: sql.placeholder("encryptedPassword"),
@@ -45,4 +44,26 @@ export const findLoginUser = async (
 		.prepare();
 
 	return query.get({ identifier }).catch(handleDbError);
+};
+
+export const createProfile = async (
+	db: DrizzleD1Database,
+	userId: string,
+	payload: CreateProfile
+) => {
+	const query = db
+		.insert(profilesTable)
+		.values({
+			userId: sql.placeholder("userId"),
+			name: sql.placeholder("name"),
+			pronoun: sql.placeholder("pronoun"),
+			profileImage: sql.placeholder("profileImage"),
+			role: sql.placeholder("role"),
+			bio: sql.placeholder("bio"),
+			website: sql.placeholder("website"),
+			country: sql.placeholder("country"),
+		})
+		.prepare();
+
+	return query.execute({ userId, ...payload }).catch(handleDbError);
 };

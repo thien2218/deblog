@@ -17,6 +17,15 @@ export const usersTable = sqliteTable("users", {
 	emailVerified: integer("email_verified", { mode: "boolean" })
 		.default(false)
 		.notNull(),
+	hasOnboarded: integer("has_onboarded", { mode: "boolean" })
+		.default(false)
+		.notNull(),
+});
+
+export const profilesTable = sqliteTable("profiles", {
+	userId: text("user_id")
+		.primaryKey()
+		.references(() => usersTable.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
 	pronoun: text("pronoun").notNull().default("they/them"),
 	profileImage: text("profile_image"),
@@ -29,28 +38,12 @@ export const usersTable = sqliteTable("users", {
 		.default(sql`(unixepoch())`),
 });
 
-// export const profilesTable = sqliteTable("profiles", {
-// 	userId: text("user_id")
-// 		.primaryKey()
-// 		.references(() => usersTable.id, { onDelete: "cascade" }),
-// 	name: text("name").notNull(),
-// 	pronoun: text("pronoun").notNull().default("they/them"),
-// 	profileImage: text("profile_image"),
-// 	role: text("role"),
-// 	bio: text("bio"),
-// 	website: text("website"),
-// 	country: text("country"),
-// 	joinedSince: integer("joined_since", { mode: "timestamp" })
-// 		.notNull()
-// 		.default(sql`(unixepoch())`),
-// });
-
 export const sessionsTable = sqliteTable("sessions", {
 	id: text("id").primaryKey(),
 	userId: text("user_id")
 		.notNull()
 		.references(() => usersTable.id, { onDelete: "cascade" }),
-	expiresAt: integer("expires_at").notNull(),
+	expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
 });
 
 export const postsTable = sqliteTable("posts", {

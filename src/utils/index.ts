@@ -1,8 +1,7 @@
 import { Lucia } from "lucia";
 import { HTTPException } from "hono/http-exception";
-import { DrizzleSQLiteAdapter } from "@lucia-auth/adapter-drizzle";
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { sessionsTable, usersTable } from "@/database/tables";
+import DBAdapter from "./db-adapter";
 
 type SQLError = { fields?: string[]; code: string };
 
@@ -48,7 +47,7 @@ export const handleDbError = ({ message }: { message: string }) => {
 };
 
 export function initializeLucia(db: DrizzleD1Database) {
-	const adapter = new DrizzleSQLiteAdapter(db, sessionsTable, usersTable);
+	const adapter = new DBAdapter(db);
 
 	return new Lucia(adapter, {
 		sessionCookie: {
@@ -61,6 +60,7 @@ export function initializeLucia(db: DrizzleD1Database) {
 			username: attr.username,
 			name: attr.name,
 			profileImage: attr.profileImage,
+			hasOnboarded: attr.hasOnboarded,
 		}),
 	});
 }
@@ -71,8 +71,9 @@ declare module "lucia" {
 		DatabaseUserAttributes: {
 			email: string;
 			username: string;
-			name: string;
-			profileImage: string;
+			name: string | null;
+			profileImage: string | null;
+			hasOnboarded: boolean;
 		};
 	}
 }
