@@ -26,17 +26,11 @@
 
 [ ] Upload images for their profile, post's thumbnail
 
-[ ] Search & search parsing
+[ ] Post and series searching
 
 [ ] Activity log & view count
 
 ## Pipelined tasks:
-
-[X] Write a DB adapter for Lucia
-
-[ ] Separate user profile from their auth data
-
-[ ] Add KV as config and user data cache
 
 [ ] Add message queue to listen to events
 

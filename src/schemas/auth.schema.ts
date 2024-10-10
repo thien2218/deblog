@@ -9,6 +9,7 @@ import {
 	object,
 	pipe,
 	string,
+	toLowerCase,
 	transform,
 	union,
 } from "valibot";
@@ -23,7 +24,15 @@ export const LoginSchema = object({
 				"Username can only contains the following characters: a-z, A-Z, 0-9, _, -"
 			)
 		),
-		pipe(string(), email("Invalid email address")),
+		pipe(
+			string(),
+			email("Invalid email address"),
+			toLowerCase(),
+			check(
+				(e) => !e.includes("+"),
+				"We don't support email address that contains '+'"
+			)
+		),
 	]),
 	password: pipe(
 		string(),
@@ -34,7 +43,15 @@ export const LoginSchema = object({
 
 export const SignupSchema = pipe(
 	object({
-		email: pipe(string(), email("Invalid email address")),
+		email: pipe(
+			string(),
+			email("Invalid email address"),
+			toLowerCase(),
+			check(
+				(e) => !e.includes("+"),
+				"We don't support email address that contains '+'"
+			)
+		),
 		username: pipe(
 			string(),
 			minLength(3, "Username must be at least 3 characters long"),
