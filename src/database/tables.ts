@@ -12,7 +12,10 @@ export const usersTable = sqliteTable("users", {
 	id: text("id").primaryKey(),
 	email: text("email").notNull().unique(),
 	username: text("username").notNull().unique(),
-	provider: text("provider").default("email").notNull(),
+	providers: text("providers", { mode: "json" })
+		.$type<("email" | "google" | "github")[]>()
+		.default(["email"])
+		.notNull(),
 	encryptedPassword: text("encrypted_password"),
 	emailVerified: integer("email_verified", { mode: "boolean" })
 		.default(false)
@@ -27,9 +30,9 @@ export const profilesTable = sqliteTable("profiles", {
 		.primaryKey()
 		.references(() => usersTable.id, { onDelete: "cascade" }),
 	name: text("name").notNull(),
-	pronoun: text("pronoun").notNull().default("they/them"),
+	pronoun: text("pronoun").notNull(),
 	profileImage: text("profile_image"),
-	role: text("role"),
+	work: text("work"),
 	bio: text("bio"),
 	website: text("website"),
 	country: text("country"),
@@ -56,7 +59,7 @@ export const postsTable = sqliteTable("posts", {
 	published: integer("published", { mode: "boolean" })
 		.notNull()
 		.default(false),
-	// coverImage: text("cover_image"),
+	coverImage: text("cover_image"),
 	createdAt: integer("created_at", { mode: "timestamp" })
 		.notNull()
 		.default(sql`(unixepoch())`),

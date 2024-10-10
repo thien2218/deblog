@@ -1,9 +1,22 @@
-import { Lucia } from "lucia";
+import { Lucia, UserId } from "lucia";
 import { HTTPException } from "hono/http-exception";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import DBAdapter from "./db-adapter";
 
 type SQLError = { fields?: string[]; code: string };
+
+export type SessionCache = {
+	session: { expiresAt: Date };
+	user: {
+		id: UserId;
+		email: string;
+		username: string;
+		hasOnboarded: boolean;
+		emailVerified: boolean;
+		name: string | null;
+		profileImage: string | null;
+	};
+};
 
 export const handleDbError = ({ message }: { message: string }) => {
 	console.log(message);
@@ -55,26 +68,14 @@ export function initializeLucia(db: DrizzleD1Database, kvProfile: KVNamespace) {
 				secure: process.env.NODE_ENV === "production",
 			},
 		},
-		getUserAttributes: (attr) => ({
-			email: attr.email,
-			username: attr.username,
-			name: attr.name,
-			profileImage: attr.profileImage,
-			hasOnboarded: attr.hasOnboarded,
-		}),
+		getUserAttributes: (attr) => attr,
 	});
 }
 
 declare module "lucia" {
 	interface Register {
 		Lucia: ReturnType<typeof initializeLucia>;
-		DatabaseUserAttributes: {
-			email: string;
-			username: string;
-			name: string | null;
-			profileImage: string | null;
-			hasOnboarded: boolean;
-		};
+		DatabaseUserAttributes: Omit<SessionCache["user"], "id">;
 	}
 }
 

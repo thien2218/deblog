@@ -23,7 +23,7 @@ export const CreateProfileSchema = object({
 		minLength(3, "Name must be at least 3 characters long"),
 		maxLength(50, "Name must be at most 50 characters long")
 	),
-	role: pipe(
+	work: pipe(
 		string(),
 		minLength(3, "Title must be at least 3 characters long"),
 		maxLength(100, "Title must be at most 100 characters long")
@@ -44,11 +44,9 @@ export const CreateProfileSchema = object({
 		url("Profile image must be a valid URL"),
 		startsWith("https://", "Profile image URL must be secure")
 	),
-	pronoun: optional(
-		picklist(
-			["he/him", "she/her", "they/them"],
-			"Pronoun can only be he/him, she/her, or they/them"
-		)
+	pronoun: picklist(
+		["he/him", "she/her", "they/them"],
+		"Pronoun can only be he/him, she/her, or they/them"
 	),
 });
 

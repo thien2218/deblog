@@ -2,6 +2,7 @@ import { DrizzleD1Database } from "drizzle-orm/d1";
 import {
 	postSeriesTable,
 	postsTable,
+	profilesTable,
 	seriesTable,
 	usersTable,
 } from "../tables";
@@ -9,6 +10,7 @@ import { and, eq, inArray, max, SQL, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 import { CreateSeries, UpdateSeries, UpdateSeriesPosts } from "@/schemas";
 import { nanoid } from "nanoid";
+import { authorColumns } from "./";
 
 const seriesColumns = {
 	id: seriesTable.id,
@@ -16,13 +18,6 @@ const seriesColumns = {
 	description: seriesTable.description,
 	createdAt: seriesTable.createdAt,
 	lastPostAddedAt: seriesTable.lastPostAddedAt,
-};
-
-const authorColumns = {
-	username: usersTable.username,
-	email: usersTable.email,
-	name: usersTable.name,
-	role: usersTable.role,
 };
 
 type SeriesPostsOrder = {
@@ -35,6 +30,7 @@ export const findSeries = async (db: DrizzleD1Database) => {
 		.select({ series: seriesColumns, author: authorColumns })
 		.from(seriesTable)
 		.leftJoin(usersTable, eq(seriesTable.authorId, usersTable.id))
+		.leftJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.prepare();
 
 	return query.all().catch(handleDbError);
@@ -66,6 +62,7 @@ export const getSeriesById = async (
 		.select({ series: seriesColumns, author: authorColumns })
 		.from(seriesTable)
 		.leftJoin(usersTable, eq(seriesTable.authorId, usersTable.id))
+		.leftJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.where(eq(seriesTable.id, sql.placeholder("seriesId")))
 		.prepare();
 

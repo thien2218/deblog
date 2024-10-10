@@ -2,12 +2,14 @@ import { Adapter, UserId, DatabaseSession, DatabaseUser } from "lucia";
 import { DrizzleD1Database } from "drizzle-orm/d1";
 import { profilesTable, sessionsTable, usersTable } from "@/database/tables";
 import { eq, lte, sql } from "drizzle-orm";
-import { handleDbError } from "./";
+import { handleDbError, SessionCache } from "./";
 
 class DBAdapter implements Adapter {
 	constructor(private db: DrizzleD1Database, private kvProfile: KVNamespace) {}
 
 	async deleteSession(sessionId: string) {
+		await this.kvProfile.delete(sessionId);
+
 		const query = this.db
 			.delete(sessionsTable)
 			.where(eq(sessionsTable.id, sql.placeholder("sessionId")))
@@ -20,9 +22,12 @@ class DBAdapter implements Adapter {
 		const query = this.db
 			.delete(sessionsTable)
 			.where(eq(sessionsTable.userId, sql.placeholder("userId")))
+			.returning({ id: sessionsTable.id })
 			.prepare();
 
-		await query.run({ userId }).catch(handleDbError);
+		const sessionIds = await query.all({ userId }).catch(handleDbError);
+
+		await Promise.all(sessionIds.map(({ id }) => this.kvProfile.delete(id)));
 	}
 
 	async deleteExpiredSessions() {
@@ -34,27 +39,37 @@ class DBAdapter implements Adapter {
 	async getSessionAndUser(
 		sessionId: string
 	): Promise<[session: DatabaseSession | null, user: DatabaseUser | null]> {
-		const query = this.db
-			.select({
-				session: { expiresAt: sessionsTable.expiresAt },
-				user: {
-					id: usersTable.id,
-					email: usersTable.email,
-					username: usersTable.username,
-					hasOnboarded: usersTable.hasOnboarded,
-					name: profilesTable.name,
-					profileImage: profilesTable.profileImage,
-				},
-			})
-			.from(sessionsTable)
-			.innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
-			.leftJoin(profilesTable, eq(sessionsTable.id, profilesTable.userId))
-			.where(eq(sessionsTable.id, sql.placeholder("sessionId")))
-			.prepare();
+		const cached = await this.kvProfile.get(sessionId);
+		let result: SessionCache | undefined;
 
-		const result = await query.get({ sessionId }).catch(handleDbError);
+		if (!cached) {
+			const query = this.db
+				.select({
+					session: { expiresAt: sessionsTable.expiresAt },
+					user: {
+						id: usersTable.id,
+						email: usersTable.email,
+						username: usersTable.username,
+						hasOnboarded: usersTable.hasOnboarded,
+						emailVerified: usersTable.emailVerified,
+						name: profilesTable.name,
+						profileImage: profilesTable.profileImage,
+					},
+				})
+				.from(sessionsTable)
+				.innerJoin(usersTable, eq(sessionsTable.userId, usersTable.id))
+				.leftJoin(profilesTable, eq(sessionsTable.id, profilesTable.userId))
+				.where(eq(sessionsTable.id, sql.placeholder("sessionId")))
+				.prepare();
 
-		if (!result) return [null, null];
+			result = await query.get({ sessionId }).catch(handleDbError);
+
+			if (!result) return [null, null];
+
+			await this.kvProfile.put(sessionId, JSON.stringify(result));
+		} else {
+			result = JSON.parse(cached) as SessionCache;
+		}
 
 		const {
 			session: { expiresAt },
@@ -96,6 +111,17 @@ class DBAdapter implements Adapter {
 	}
 
 	async updateSessionExpiration(sessionId: string, expiresAt: Date) {
+		const cached = await this.kvProfile.get(sessionId);
+
+		if (cached) {
+			const { user } = JSON.parse(cached) as SessionCache;
+
+			await this.kvProfile.put(
+				sessionId,
+				JSON.stringify({ session: { expiresAt }, user })
+			);
+		}
+
 		await this.db
 			.update(sessionsTable)
 			.set({ expiresAt })

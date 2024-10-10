@@ -4,16 +4,12 @@ import { commentsTable, postsTable, reactionsTable } from "../tables";
 import { and, eq, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 
-const tables = {
-	post: postsTable,
-	comment: commentsTable,
-};
-
 export const isValidTarget = async (
 	db: DrizzleD1Database,
 	targetId: string,
 	targetType: "post" | "comment"
 ) => {
+	const tables = { post: postsTable, comment: commentsTable };
 	const table = tables[targetType];
 	const query = db.select().from(table).where(eq(table.id, targetId));
 	return db.get<{ valid: boolean }>(sql`select exists${query} as 'valid'`);

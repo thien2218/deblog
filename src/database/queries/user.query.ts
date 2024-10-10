@@ -3,6 +3,7 @@ import { DrizzleD1Database } from "drizzle-orm/d1";
 import {
 	commentsTable,
 	postsTable,
+	profilesTable,
 	reportsTable,
 	subscriptionsTable,
 	usersTable,
@@ -14,16 +15,17 @@ export const findProfile = async (db: DrizzleD1Database, username: string) => {
 	const query = db
 		.select({
 			username: usersTable.username,
-			name: usersTable.name,
-			profileImage: usersTable.profileImage,
-			pronoun: usersTable.pronoun,
-			role: usersTable.role,
-			bio: usersTable.bio,
-			website: usersTable.website,
-			country: usersTable.country,
-			joinedSince: usersTable.joinedSince,
+			name: profilesTable.name,
+			profileImage: profilesTable.profileImage,
+			pronoun: profilesTable.pronoun,
+			work: profilesTable.work,
+			bio: profilesTable.bio,
+			website: profilesTable.website,
+			country: profilesTable.country,
+			joinedSince: profilesTable.joinedSince,
 		})
 		.from(usersTable)
+		.innerJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.where(eq(usersTable.username, sql.placeholder("username")))
 		.prepare();
 
@@ -36,9 +38,9 @@ export const updateProfile = async (
 	payload: UpdateProfile
 ) => {
 	const query = db
-		.update(usersTable)
+		.update(profilesTable)
 		.set(payload)
-		.where(eq(usersTable.id, userId));
+		.where(eq(profilesTable.userId, userId));
 
 	return query.run().catch(handleDbError);
 };

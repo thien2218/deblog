@@ -58,7 +58,7 @@ export const createProfile = async (
 			name: sql.placeholder("name"),
 			pronoun: sql.placeholder("pronoun"),
 			profileImage: sql.placeholder("profileImage"),
-			role: sql.placeholder("role"),
+			work: sql.placeholder("work"),
 			bio: sql.placeholder("bio"),
 			website: sql.placeholder("website"),
 			country: sql.placeholder("country"),

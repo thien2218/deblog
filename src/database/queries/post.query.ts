@@ -1,10 +1,16 @@
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { postsTable, savedPostsTable, usersTable } from "../tables";
+import {
+	postsTable,
+	profilesTable,
+	savedPostsTable,
+	usersTable,
+} from "../tables";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 import { PageQuery, UpdatePostMetadata } from "@/schemas";
+import { authorColumns } from "./";
 
-const postSchema = {
+const postColumns = {
 	id: postsTable.id,
 	title: postsTable.title,
 	description: postsTable.description,
@@ -12,19 +18,13 @@ const postSchema = {
 	updatedAt: postsTable.updatedAt,
 };
 
-const authorSchema = {
-	username: usersTable.username,
-	name: usersTable.name,
-	profileImage: usersTable.profileImage,
-	role: usersTable.role,
-};
-
 export const findPosts = async (db: DrizzleD1Database, page: PageQuery) => {
 	const query = db
-		.select({ post: postSchema, author: authorSchema })
+		.select({ post: postColumns, author: authorColumns })
 		.from(postsTable)
 		.where(eq(postsTable.published, true))
 		.leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.leftJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.offset(sql.placeholder("offset"))
 		.limit(sql.placeholder("limit"))
 		.prepare();
@@ -38,7 +38,7 @@ export const findPostsFromAuthor = async (
 	page: PageQuery
 ) => {
 	const query = db
-		.select({ post: postSchema, author: authorSchema })
+		.select({ post: postColumns, author: authorColumns })
 		.from(postsTable)
 		.where(
 			and(
@@ -62,7 +62,7 @@ export const findSavedPosts = async (
 	page: PageQuery
 ) => {
 	const query = db
-		.select(postSchema)
+		.select(postColumns)
 		.from(savedPostsTable)
 		.where(eq(savedPostsTable.userId, sql.placeholder("userId")))
 		.innerJoin(postsTable, eq(postsTable.id, savedPostsTable.postId))
@@ -114,13 +114,13 @@ export const readPostFromAuthor = async (
 ) => {
 	const query = db
 		.select({
-			post: postSchema,
+			post: postColumns,
 			author: {
 				id: usersTable.id,
-				...authorSchema,
-				pronoun: usersTable.pronoun,
-				country: usersTable.country,
-				website: usersTable.website,
+				...authorColumns,
+				pronoun: profilesTable.pronoun,
+				country: profilesTable.country,
+				website: profilesTable.website,
 			},
 		})
 		.from(postsTable)
@@ -132,6 +132,7 @@ export const readPostFromAuthor = async (
 			)
 		)
 		.leftJoin(usersTable, eq(postsTable.authorId, usersTable.id))
+		.leftJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.prepare();
 
 	return query.get({ id, username }).catch(handleDbError);
@@ -191,7 +192,7 @@ export const findDrafts = async (
 	page: PageQuery
 ) => {
 	const query = db
-		.select(postSchema)
+		.select(postColumns)
 		.from(postsTable)
 		.where(
 			and(
@@ -213,7 +214,7 @@ export const readDraft = async (
 	authorId: string
 ) => {
 	const query = db
-		.select(postSchema)
+		.select(postColumns)
 		.from(postsTable)
 		.where(
 			and(

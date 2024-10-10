@@ -1,9 +1,10 @@
 import { PageQuery } from "@/schemas";
 import { DrizzleD1Database } from "drizzle-orm/d1";
-import { commentsTable, usersTable } from "../tables";
+import { commentsTable, profilesTable, usersTable } from "../tables";
 import { and, eq, sql } from "drizzle-orm";
 import { handleDbError } from "@/utils";
 import { nanoid } from "nanoid";
+import { authorColumns } from ".";
 
 export const getCommentsOfPost = async (
 	db: DrizzleD1Database,
@@ -12,13 +13,17 @@ export const getCommentsOfPost = async (
 ) => {
 	const query = db
 		.select({
-			id: commentsTable.id,
-			content: commentsTable.content,
-			edited: commentsTable.edited,
-			createdAt: commentsTable.createdAt,
+			comment: {
+				id: commentsTable.id,
+				content: commentsTable.content,
+				edited: commentsTable.edited,
+				createdAt: commentsTable.createdAt,
+			},
+			author: authorColumns,
 		})
 		.from(commentsTable)
-		.innerJoin(usersTable, eq(commentsTable.authorId, usersTable.id))
+		.leftJoin(usersTable, eq(commentsTable.authorId, usersTable.id))
+		.leftJoin(profilesTable, eq(usersTable.id, profilesTable.userId))
 		.where(eq(commentsTable.postId, sql.placeholder("postId")))
 		.limit(sql.placeholder("limit"))
 		.offset(sql.placeholder("offset"));

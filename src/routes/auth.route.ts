@@ -5,7 +5,8 @@ import { compare, hash } from "bcryptjs";
 import { nanoid } from "nanoid";
 import { auth, unauth, valibot } from "@/middlewares";
 import { insertUser, findLoginUser, createProfile } from "@/database/queries";
-import { User } from "lucia";
+import { Session, User } from "lucia";
+import { SessionCache } from "@/utils";
 
 const notOnboarded: MiddlewareHandler<AppEnv> = async (c, next) => {
 	const user = c.get("user");
@@ -72,10 +73,21 @@ authRoutes.post(
 	notOnboarded,
 	valibot("json", CreateProfileSchema),
 	async (c) => {
-		const { id } = c.get("user") as User;
+		const { id: userId } = c.get("user") as User;
+		const { id } = c.get("session") as Session;
 		const payload = c.req.valid("json");
 
-		await createProfile(c.get("db"), id, payload);
+		if (payload.name) {
+			const cached = (await c.env.KV_PROFILES.get(id)) as string;
+			const { session, user } = JSON.parse(cached) as SessionCache;
+
+			await c.env.KV_PROFILES.put(
+				id,
+				JSON.stringify({ session, user: { ...user, name: payload.name } })
+			);
+		}
+
+		await createProfile(c.get("db"), userId, payload);
 
 		return c.text("Profile created successfully", 201);
 	}
@@ -86,7 +98,10 @@ authRoutes.post("/logout", auth, async (c) => {
 	const session = c.get("session");
 	const lucia = c.get("lucia");
 
-	await lucia.invalidateSession(session.id);
+	// Session invalidation only removes the session from the database
+	// so no need to await it since it can be done in the background
+	// or later by a cron job
+	lucia.invalidateSession(session.id);
 
 	c.header("Set-Cookie", lucia.createBlankSessionCookie().serialize(), {
 		append: true,
