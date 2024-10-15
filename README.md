@@ -30,10 +30,6 @@
 
 [ ] Activity log & view count
 
-## Pipelined tasks:
-
-[ ] Add message queue to listen to events
-
 ## Add-ons:
 
 -  Receive email when their subscribed user publish a new post
