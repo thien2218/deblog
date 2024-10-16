@@ -34,7 +34,10 @@ export const removeTagsFromPost = async (
 		.where(
 			and(
 				eq(postTagsTable.postId, sql.placeholder("postId")),
-				inArray(postTagsTable.originalTag, sql.placeholder("tags"))
+				inArray(
+					postTagsTable.originalTag,
+					sql`(${sql.placeholder("tags")})`
+				)
 			)
 		)
 		.returning({ tag: postTagsTable.originalTag })

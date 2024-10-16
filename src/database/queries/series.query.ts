@@ -181,7 +181,7 @@ export const arePostsByAuthor = async (
 		.where(
 			and(
 				eq(seriesTable.authorId, sql.placeholder("authorId")),
-				inArray(postsTable.id, sql.placeholder("postIds"))
+				inArray(postsTable.id, sql`(${sql.placeholder("postIds")})`)
 			)
 		)
 		.prepare();
@@ -207,7 +207,10 @@ export const removeSeriesPosts = async (
 		.where(
 			and(
 				eq(postSeriesTable.seriesId, sql.placeholder("seriesId")),
-				inArray(postSeriesTable.postId, sql.placeholder("postIds"))
+				inArray(
+					postSeriesTable.postId,
+					sql`(${sql.placeholder("postIds")})`
+				)
 			)
 		)
 		.returning({ postId: postSeriesTable.postId })
