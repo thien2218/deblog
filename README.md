@@ -24,9 +24,9 @@
 
 [ ] Sort by relevance or recency for public posts and relevance, most/least recency or alphabet for their posts (draft/saved/published)
 
-[ ] Upload images for their profile, post's thumbnail
+[ ] Upload images for user profile, post's thumbnail and attachments
 
-[ ] Post and series searching
+[ ] Post and series searching and filtering
 
 [ ] Activity log & view count
 
@@ -38,4 +38,4 @@
    -  when their report is handled
    -  when another user react to their post/comment
    -  when another user subscribe to them
--  Blacklist another user (block comment writing from blacklisted user)
+-  Blacklist another user (block comment writing and profile view from blacklisted user and vice versa)
